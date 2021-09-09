@@ -4,7 +4,7 @@ from scipy.stats import rv_histogram
 from .smo import smo
 
 
-def smo_mask(masked_image, /, *, sigma, size, threshold):
+def smo_mask(masked_image, *, sigma, size, threshold):
     """Returns the mask of (some) background noise.
 
     Parameters
@@ -37,7 +37,7 @@ def smo_mask(masked_image, /, *, sigma, size, threshold):
     return (smo_image < threshold) & ~masked_image.mask
 
 
-def bg_rv(masked_image, /, *, sigma, size, threshold) -> rv_histogram:
+def bg_rv(masked_image, *, sigma, size, threshold) -> rv_histogram:
     """Returns the distribution of background noise.
 
     It returns an instance of scipy.stats.rv_histogram.

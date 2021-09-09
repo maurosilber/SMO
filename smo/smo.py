@@ -3,11 +3,11 @@ from scipy import ndimage, stats
 from scipy.ndimage._ni_support import _normalize_sequence
 
 
-def _euclidean_norm(x: list[np.ndarray], /) -> np.ndarray:
+def _euclidean_norm(x: list[np.ndarray]) -> np.ndarray:
     return np.sqrt(sum(xi ** 2 for xi in x))
 
 
-def _normalized_gradient(input, /):
+def _normalized_gradient(input):
     """Calculates the normalized gradient of a scalar field.
 
     Parameters
@@ -32,7 +32,7 @@ def _normalized_gradient(input, /):
     return grad
 
 
-def smo(input: np.ndarray, /, *, sigma: float, size: int):
+def smo(input: np.ndarray, *, sigma: float, size: int):
     """Applies the Silver Mountain Operator (SMO) to a scalar field.
 
     Parameters
