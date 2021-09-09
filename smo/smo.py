@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import numpy as np
 from scipy import ndimage, stats
 from scipy.ndimage._ni_support import _normalize_sequence
