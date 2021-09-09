@@ -33,7 +33,7 @@ def smo_mask(masked_image, *, sigma, size, threshold):
         )
 
     masked_image = np.ma.asarray(masked_image)
-    smo_image = smo(masked_image, sigma, size)
+    smo_image = smo(masked_image, sigma=sigma, size=size)
     return (smo_image < threshold) & ~masked_image.mask
 
 
