@@ -2,6 +2,7 @@
 
 ## Master
 
+- Added napari plugin
 - Added handling of masked arrays.
 - Added API module.
 - Added type annotations.
