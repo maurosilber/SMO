@@ -61,7 +61,8 @@ def smo(input: np.ndarray, *, sigma: float, size: int) -> np.ndarray:
 
     Notes
     -----
-    Sigma and size are scale parameters, and should be less than the typical object size.
+    Sigma and size are scale parameters,
+    and should be less than the typical object size.
     """
     size = _normalize_sequence(size, input.ndim)
     input = ndimage.gaussian_filter(input.astype(float, copy=False), sigma=sigma)

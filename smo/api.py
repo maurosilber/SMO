@@ -23,7 +23,8 @@ class SMO:
 
         Notes
         -----
-        Sigma and size are scale parameters, and should be less than the typical object size.
+        Sigma and size are scale parameters,
+        and should be less than the typical object size.
         """
         self.sigma = sigma
         self.size = size
