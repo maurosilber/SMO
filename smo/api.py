@@ -34,7 +34,7 @@ class SMO:
         self.smo_rv = smo_rv(shape, sigma=sigma, size=size, random_state=random_state)
 
     def _check_dim(self, image: np.ndarray):
-        """Checks that image has the appropiate dimension.
+        """Checks that image has the appropriate dimension.
 
         It should be checked every time self.smo_rv is called.
         """
