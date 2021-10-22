@@ -3,7 +3,9 @@ import numpy as np
 from .smo import _rv, rv_continuous, smo
 
 
-def smo_mask(masked_image, *, sigma, size, threshold):
+def smo_mask(
+    masked_image: np.ma.MaskedArray, *, sigma: float, size: int, threshold: float
+) -> np.ndarray:
     """Returns the mask of (some) background noise.
 
     Parameters
@@ -19,11 +21,12 @@ def smo_mask(masked_image, *, sigma, size, threshold):
 
     Returns
     -------
-    mask : numpy.array
+    numpy.ndarray of booleans
 
-    Notesvalue
+    Notes
     -----
-    Sigma and size are scale parameters, and should be less than the typical object size.
+    Sigma and size are scale parameters,
+    and should be less than the typical object size.
     """
     if not np.ma.isMaskedArray(masked_image):
         raise TypeError(
@@ -31,12 +34,13 @@ def smo_mask(masked_image, *, sigma, size, threshold):
             "Use np.ma.masked_greater_equal(image, value_of_saturation)."
         )
 
-    masked_image = np.ma.asarray(masked_image)
     smo_image = smo(masked_image, sigma=sigma, size=size)
     return (smo_image < threshold) & ~masked_image.mask
 
 
-def bg_rv(masked_image, *, sigma, size, threshold) -> rv_continuous:
+def bg_rv(
+    masked_image: np.ma.MaskedArray, *, sigma: float, size: int, threshold: float
+) -> rv_continuous:
     """Returns the distribution of background noise.
 
     It returns an instance of scipy.stats.rv_histogram.
@@ -49,7 +53,7 @@ def bg_rv(masked_image, *, sigma, size, threshold) -> rv_continuous:
         Image. If there are saturated pixels, they should be masked.
     sigma : scalar or sequence of scalars
         Standard deviation for Gaussian kernel.
-    size : int or tuple of int
+    size : int or sequence of int
         Averaging window size.
     threshold : float
         Threshold value [0, 1] for the SMO image.
@@ -60,7 +64,8 @@ def bg_rv(masked_image, *, sigma, size, threshold) -> rv_continuous:
 
     Notes
     -----
-    Sigma and size are scale parameters, and should be less than the typical object size.
+    Sigma and size are scale parameters,
+    and should be less than the typical object size.
     """
     mask = smo_mask(masked_image, sigma=sigma, size=size, threshold=threshold)
     background_values = masked_image[mask].compressed()

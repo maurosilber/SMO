@@ -23,12 +23,12 @@ def _normalized_gradient(input: np.ndarray) -> list[np.ndarray]:
 
     Parameters
     ----------
-    input : numpy.array
+    input : numpy.ndarray
         Input field.
 
     Returns
     -------
-    numpy.array
+    list of numpy.ndarray
         The normalized gradient of the scalar field.
     """
     grad = np.gradient(input.astype(float, copy=False))
@@ -43,12 +43,12 @@ def _normalized_gradient(input: np.ndarray) -> list[np.ndarray]:
     return grad
 
 
-def smo(input: np.ndarray, *, sigma: float, size: int):
+def smo(input: np.ndarray, *, sigma: float, size: int) -> np.ndarray:
     """Applies the Silver Mountain Operator (SMO) to a scalar field.
 
     Parameters
     ----------
-    input : numpy.array
+    input : numpy.ndarray
         Input field.
     sigma : scalar or sequence of scalars
         Standard deviation for Gaussian kernel.
@@ -57,18 +57,24 @@ def smo(input: np.ndarray, *, sigma: float, size: int):
 
     Returns
     -------
-    numpy.array
+    numpy.ndarray
+
+    Notes
+    -----
+    Sigma and size are scale parameters, and should be less than the typical object size.
     """
     size = _normalize_sequence(size, input.ndim)
     input = ndimage.gaussian_filter(input.astype(float, copy=False), sigma=sigma)
     grad = _normalized_gradient(input)
-    # Inplace average gradient
+    # In-place average gradient
     for x in grad:
         ndimage.uniform_filter(x, size=size, output=x)
     return _euclidean_norm(grad)
 
 
-def smo_rv(shape, *, sigma, size, random_state=None):
+def smo_rv(
+    shape: tuple[int, ...], *, sigma: float, size: int, random_state=None
+) -> rv_continuous:
     """Generates a random variable of the SMO operator for a given sigma and size.
 
     Parameters
@@ -80,7 +86,7 @@ def smo_rv(shape, *, sigma, size, random_state=None):
     size : int or sequence of int
         Averaging window size.
     random_state : numpy.random.Generator
-        By default
+        By default, numpy.random.default_rng(seed=42).
 
     Returns
     -------
