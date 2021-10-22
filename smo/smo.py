@@ -12,10 +12,13 @@ def _rv(x: np.ndarray) -> rv_continuous:
 
 
 def _euclidean_norm(x: list[np.ndarray]) -> np.ndarray:
+    if len(x) == 1:
+        return np.abs(x[0])
+
     return np.sqrt(sum(xi ** 2 for xi in x))
 
 
-def _normalized_gradient(input):
+def _normalized_gradient(input: np.ndarray) -> list[np.ndarray]:
     """Calculates the normalized gradient of a scalar field.
 
     Parameters
@@ -31,7 +34,7 @@ def _normalized_gradient(input):
     grad = np.gradient(input.astype(float, copy=False))
 
     if input.ndim == 1:
-        return np.sign(grad, out=grad)
+        return [np.sign(grad, out=grad)]
 
     norm = _euclidean_norm(grad)
     mask = norm > 0
