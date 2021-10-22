@@ -1,8 +1,14 @@
 from __future__ import annotations
 
 import numpy as np
-from scipy import ndimage, stats
+from scipy import ndimage
 from scipy.ndimage._ni_support import _normalize_sequence
+from scipy.stats import rv_continuous, rv_histogram
+
+
+def _rv(x: np.ndarray) -> rv_continuous:
+    hist = np.histogram(x.flat, bins="auto")
+    return rv_histogram(hist)
 
 
 def _euclidean_norm(x: list[np.ndarray]) -> np.ndarray:
@@ -75,13 +81,11 @@ def smo_rv(shape, *, sigma, size, random_state=None):
 
     Returns
     -------
-    HistogramRV
-        Subclass of scipy.stats.rv_histogram.
+    scipy.stats.rv_continuous.
     """
     if random_state is None:
         random_state = np.random.default_rng(seed=42)
 
     image = random_state.uniform(size=shape)
     smo_image = smo(image, sigma=sigma, size=size)
-    hist = np.histogram(smo_image, bins="fd")
-    return stats.rv_histogram(hist)
+    return _rv(smo_image)
