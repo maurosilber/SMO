@@ -2,6 +2,7 @@
 
 ## Master
 
+- Added API module
 - Added type annotations.
 - Fixed 1D implementation.
 
