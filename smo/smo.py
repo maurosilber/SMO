@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
-from scipy import ndimage
-from scipy.ndimage._ni_support import _normalize_sequence
+from scipy.ndimage import gaussian_filter, uniform_filter
 from scipy.stats import rv_continuous, rv_histogram
 
 
@@ -16,6 +15,50 @@ def _euclidean_norm(x: list[np.ndarray]) -> np.ndarray:
         return np.abs(x[0])
 
     return np.sqrt(sum(xi ** 2 for xi in x))
+
+
+def _filter(
+    filter: callable, image: np.ndarray | np.ma.MaskedArray, **kwargs
+) -> np.ndarray | np.ma.MaskedArray:
+    """Applies a scipy.ndimage filter respecting the mask.
+
+    Parameters
+    ----------
+    filter : callable
+        A scipy.ndimage filter, supporting `mode="constant"`.
+    image : np.ndarray | np.ma.MaskedArray
+        A numpy.ndarray or MaskedArray. It is converted to float.
+
+    kwargs are passed to filter.
+
+    Returns
+    -------
+    np.ndarray | np.ma.MaskedArray
+        If the input image was a MaskedArray, the output is also a MaskedArray,
+        and the mask is shared with the input image.
+
+    Notes
+    -----
+    Inspired on https://stackoverflow.com/a/36307291,
+    which gives the same result as astropy.convolve.
+    """
+    image = image.astype(float, copy=False)
+
+    if not isinstance(image, np.ma.MaskedArray):
+        return filter(image, **kwargs, mode="constant")
+
+    if kwargs.get("output") is not None:
+        raise ValueError("Argument output is not respected for MaskedArray.")
+
+    if not image.mask.any():
+        out = filter(image.data, **kwargs, mode="constant")
+    else:
+        out = filter(image.filled(0), **kwargs, mode="constant")
+        norm = filter((~image.mask).astype(float), **kwargs, mode="constant")
+        with np.errstate(divide="ignore", invalid="ignore"):
+            out = np.where(image.mask, np.nan, out / norm)
+
+    return np.ma.MaskedArray(out, image.mask)
 
 
 def _normalized_gradient(input: np.ndarray) -> list[np.ndarray]:
@@ -43,7 +86,9 @@ def _normalized_gradient(input: np.ndarray) -> list[np.ndarray]:
     return grad
 
 
-def smo(input: np.ndarray, *, sigma: float, size: int) -> np.ndarray:
+def smo(
+    input: np.ndarray | np.ma.MaskedArray, *, sigma: float, size: int
+) -> np.ndarray | np.ma.MaskedArray:
     """Applies the Silver Mountain Operator (SMO) to a scalar field.
 
     Parameters
@@ -57,19 +102,16 @@ def smo(input: np.ndarray, *, sigma: float, size: int) -> np.ndarray:
 
     Returns
     -------
-    numpy.ndarray
+    numpy.ndarray | np.ma.MaskedArray
 
     Notes
     -----
     Sigma and size are scale parameters,
     and should be less than the typical object size.
     """
-    size = _normalize_sequence(size, input.ndim)
-    input = ndimage.gaussian_filter(input.astype(float, copy=False), sigma=sigma)
+    input = _filter(gaussian_filter, input, sigma=sigma)
     grad = _normalized_gradient(input)
-    # In-place average gradient
-    for x in grad:
-        ndimage.uniform_filter(x, size=size, output=x)
+    grad = [_filter(uniform_filter, x, size=size) for x in grad]
     return _euclidean_norm(grad)
 
 

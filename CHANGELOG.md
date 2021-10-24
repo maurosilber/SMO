@@ -2,7 +2,8 @@
 
 ## Master
 
-- Added API module
+- Added handling of masked arrays.
+- Added API module.
 - Added type annotations.
 - Fixed 1D implementation.
 

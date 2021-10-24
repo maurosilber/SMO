@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import numpy as np
 
 from .background import bg_rv, smo_mask
@@ -42,17 +44,19 @@ class SMO:
                 f"while this SMO was constructed for dimension {self.ndim}."
             )
 
-    def smo_image(self, image: np.ndarray) -> np.ndarray:
+    def smo_image(
+        self, image: np.ndarray | np.ma.MaskedArray
+    ) -> np.ndarray | np.ma.MaskedArray:
         """Applies the Silver Mountain Operator (SMO) to a scalar field.
 
         Parameters
         ----------
-        input : numpy.ndarray
+        input : numpy.ndarray | np.ma.MaskedArray
             Input field.
 
         Returns
         -------
-        numpy.ndarray
+        numpy.ndarray | np.ma.MaskedArray
         """
         return smo(image, sigma=self.sigma, size=self.size)
 
@@ -110,7 +114,7 @@ class SMO:
 
     def bg_probability(
         self, masked_image: np.ma.MaskedArray, *, threshold: float = 0.05
-    ) -> np.ndarray:
+    ) -> np.ma.MaskedArray:
         """Returns the probability that each pixel doesn't belong to the background.
 
         It uses the cumulative density function (CDF) of the background distribution
@@ -125,6 +129,8 @@ class SMO:
 
         Returns
         -------
-        scipy.stats.rv_continuous
+        np.ma.MaskedArray
+            The output shares the input's mask.
         """
-        return self.bg_rv(masked_image, threshold=threshold).cdf(masked_image)
+        out = self.bg_rv(masked_image, threshold=threshold).cdf(masked_image)
+        return np.ma.MaskedArray(out, masked_image.mask)
