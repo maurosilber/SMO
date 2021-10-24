@@ -32,6 +32,10 @@ class SMO:
         self.smo_rv = smo_rv(shape, sigma=sigma, size=size, random_state=random_state)
 
     def _check_dim(self, image: np.ndarray):
+        """Checks that image has the appropiate dimension.
+
+        It should be checked every time self.smo_rv is called.
+        """
         if image.ndim != self.ndim:
             raise ValueError(
                 f"Dimension of input image is {image.ndim}, "
@@ -50,7 +54,6 @@ class SMO:
         -------
         numpy.ndarray
         """
-        self._check_dim(image)  # Not really necessary here.
         return smo(image, sigma=self.sigma, size=self.size)
 
     def smo_mask(
@@ -124,5 +127,4 @@ class SMO:
         -------
         scipy.stats.rv_continuous
         """
-        self._check_dim(masked_image)
         return self.bg_rv(masked_image, threshold=threshold).cdf(masked_image)
