@@ -60,6 +60,26 @@ class SMO:
         """
         return smo(image, sigma=self.sigma, size=self.size)
 
+    def smo_probability(
+        self, image: np.ndarray | np.ma.MaskedArray
+    ) -> np.ndarray | np.ma.MaskedArray:
+        """Applies the Silver Mountain Operator (SMO) to a scalar field.
+
+        Parameters
+        ----------
+        input : numpy.array | np.ma.MaskedArray
+            Input field.
+
+        Returns
+        -------
+        numpy.array | np.ma.MaskedArray
+        """
+        self._check_dim(image)
+        smo_prob = self.smo_rv.cdf(self.smo_image(image))
+        if isinstance(image, np.ma.MaskedArray):
+            smo_prob = np.ma.MaskedArray(smo_prob, image.mask)
+        return smo_prob
+
     def smo_mask(
         self, masked_image: np.ma.MaskedArray, *, threshold: float = 0.05
     ) -> np.ndarray:
