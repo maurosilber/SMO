@@ -10,6 +10,17 @@ It can be installed with `pip` from PyPI:
 pip install smo
 ```
 
+## Plugins
+### Napari
+
+A [napari](https://napari.org) plugin is available. Just `pip` install this package.
+
+## CellProfiler
+
+A [CellProfiler](https://cellprofiler.org) plugin in available in the `smo/plugins/cellprofiler` folder.
+
+Save [this file](https://github.com/maurosilber/SMO/tree/main/smo/plugins/cellprofiler/smo.py) into your CellProfiler plugins folder.
+
 ## Example
 
 ```python
