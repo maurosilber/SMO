@@ -18,72 +18,66 @@ def _euclidean_norm(x: list[np.ndarray]) -> np.ndarray:
 
 
 def _filter(
-    filter: callable, image: np.ndarray | np.ma.MaskedArray, **kwargs
-) -> np.ndarray | np.ma.MaskedArray:
+    filter: callable, input: np.ndarray | np.ma.MaskedArray, **kwargs
+) -> np.ma.MaskedArray:
     """Applies a scipy.ndimage filter respecting the mask.
 
     Parameters
     ----------
     filter : callable
         A scipy.ndimage filter, supporting `mode="constant"`.
-    image : np.ndarray | np.ma.MaskedArray
-        A numpy.ndarray or MaskedArray. It is converted to float.
+    input : numpy.ndarray | numpy.ma.MaskedArray
+        If it is not a MaskedArray, it is converted to a MaskedArray.
 
-    kwargs are passed to filter.
+    Keyword arguments are passed to filter.
 
     Returns
     -------
-    np.ndarray | np.ma.MaskedArray
-        If the input image was a MaskedArray, the output is also a MaskedArray,
-        and the mask is shared with the input image.
+    numpy.ma.MaskedArray
+        The mask is shared with the input image.
 
     Notes
     -----
     Inspired on https://stackoverflow.com/a/36307291,
     which gives the same result as astropy.convolve.
     """
-    image = image.astype(float, copy=False)
-
-    if not isinstance(image, np.ma.MaskedArray):
-        return filter(image, **kwargs, mode="constant")
-
     if kwargs.get("output") is not None:
         raise ValueError("Argument output is not respected for MaskedArray.")
 
-    if not image.mask.any():
-        out = filter(image.data, **kwargs, mode="constant")
-    else:
-        out = filter(image.filled(0), **kwargs, mode="constant")
-        norm = filter((~image.mask).astype(float), **kwargs, mode="constant")
-        with np.errstate(divide="ignore", invalid="ignore"):
-            out = np.where(image.mask, np.nan, out / norm)
+    # mask=None creates a np.zeros_like(input.data, bool) if no mask is provided.
+    input = np.ma.MaskedArray(input, mask=None)
 
-    return np.ma.MaskedArray(out, image.mask)
+    out = filter(input.filled(0), **kwargs, mode="constant")
+    norm = filter((~input.mask).astype(float), **kwargs, mode="constant")
+    with np.errstate(divide="ignore", invalid="ignore"):
+        out = np.where(input.mask, np.nan, out / norm)
+
+    return np.ma.MaskedArray(out, input.mask)
 
 
-def _normalized_gradient(input: np.ndarray) -> list[np.ndarray]:
+def _normalized_gradient(input: np.ma.MaskedArray) -> list[np.ma.MaskedArray]:
     """Calculates the normalized gradient of a scalar field.
 
     Parameters
     ----------
-    input : numpy.ndarray
+    input : numpy.ma.MaskedArray
         Input field.
 
     Returns
     -------
-    list of numpy.ndarray
+    list of numpy.ma.MaskedArray
         The normalized gradient of the scalar field.
     """
-    grad = np.gradient(input.astype(float, copy=False))
+    grad = np.gradient(input)
 
     if input.ndim == 1:
         return [np.sign(grad, out=grad)]
 
-    norm = _euclidean_norm(grad)
-    mask = norm > 0
+    norm = np.ma.MaskedArray(_euclidean_norm(grad), mask=input.mask)
     for x in grad:
-        np.divide(x, norm, where=mask, out=x)
-    return grad
+        np.divide(x.data, norm.data, where=(norm > 0).filled(False), out=x.data)
+
+    return [np.ma.MaskedArray(x.data, norm.mask) for x in grad]
 
 
 def smo(
@@ -93,7 +87,7 @@ def smo(
 
     Parameters
     ----------
-    input : numpy.ndarray
+    input : numpy.ndarray | numpy.ma.MaskedArray
         Input field.
     sigma : scalar or sequence of scalars
         Standard deviation for Gaussian kernel.
@@ -102,17 +96,23 @@ def smo(
 
     Returns
     -------
-    numpy.ndarray | np.ma.MaskedArray
+    numpy.ndarray | numpy.ma.MaskedArray
 
     Notes
     -----
     Sigma and size are scale parameters,
     and should be less than the typical object size.
     """
-    input = _filter(gaussian_filter, input, sigma=sigma)
-    grad = _normalized_gradient(input)
-    grad = [_filter(uniform_filter, x, size=size) for x in grad]
-    return _euclidean_norm(grad)
+    input = input.astype(float, copy=False)
+    out = _filter(gaussian_filter, input, sigma=sigma)
+    out = _normalized_gradient(out)
+    out = [_filter(uniform_filter, x, size=size) for x in out]
+    out = _euclidean_norm(out)
+
+    if isinstance(input, np.ma.MaskedArray):
+        return out
+    else:
+        return out.data
 
 
 def smo_rv(
