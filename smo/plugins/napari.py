@@ -1,4 +1,9 @@
-from typing import Annotated, Optional
+from typing import Optional
+
+try:
+    from typing import Annotated
+except ImportError:
+    from typing_extensions import Annotated
 
 import numpy as np
 from napari.types import ImageData, LabelsData
