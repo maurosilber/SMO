@@ -12,6 +12,9 @@ class SMO:
     ):
         """Wrapper to simplify the use of the Silver Mountain Operator (SMO).
 
+        Most methods requiere a MaskedArray with saturated pixels masked. If provided
+        as a non-MaskedArray, a mask is generated for the image maximum.
+
         Parameters
         ----------
         sigma : scalar or sequence of scalars
@@ -44,6 +47,14 @@ class SMO:
                 f"while this SMO was constructed for dimension {self.ndim}."
             )
 
+    def _check_masked(self, image: np.ndarray | np.ma.MaskedArray) -> np.ma.MaskedArray:
+        """If image is not masked, mask the maximum intenstiy values."""
+        if isinstance(image, np.ma.MaskedArray):
+            return image
+
+        saturation = image.max()
+        return np.ma.masked_greater_equal(image, saturation)
+
     def smo_image(
         self, image: np.ndarray | np.ma.MaskedArray
     ) -> np.ndarray | np.ma.MaskedArray:
@@ -67,12 +78,12 @@ class SMO:
 
         Parameters
         ----------
-        input : numpy.array | np.ma.MaskedArray
+        input : numpy.ndarray | np.ma.MaskedArray
             Input field.
 
         Returns
         -------
-        numpy.array | np.ma.MaskedArray
+        numpy.ndarray | np.ma.MaskedArray
         """
         self._check_dim(image)
         smo_prob = self.smo_rv.cdf(self.smo_image(image))
@@ -81,13 +92,13 @@ class SMO:
         return smo_prob
 
     def smo_mask(
-        self, masked_image: np.ma.MaskedArray, *, threshold: float = 0.05
+        self, image: np.ndarray | np.ma.MaskedArray, *, threshold: float = 0.05
     ) -> np.ndarray:
         """Returns the mask of (some) background noise.
 
         Parameters
         ----------
-        masked_image : numpy.ma.MaskedArray
+        image : numpy.ndarray | numpy.ma.MaskedArray
             Image. If there are saturated pixels, they should be masked.
         threshold : float
             Threshold value [0, 1] for the SMO image.
@@ -96,7 +107,8 @@ class SMO:
         -------
         numpy.ndarray of booleans
         """
-        self._check_dim(masked_image)
+        self._check_dim(image)
+        masked_image = self._check_masked(image)
         return smo_mask(
             masked_image,
             sigma=self.sigma,
@@ -105,7 +117,7 @@ class SMO:
         )
 
     def bg_rv(
-        self, masked_image: np.ma.MaskedArray, *, threshold: float = 0.05
+        self, image: np.ndarray | np.ma.MaskedArray, *, threshold: float = 0.05
     ) -> rv_continuous:
         """Returns the distribution of background noise.
 
@@ -115,7 +127,7 @@ class SMO:
 
         Parameters
         ----------
-        masked_image : numpy.ma.MaskedArray
+        image : numpy.ndarray | numpy.ma.MaskedArray
             Image. If there are saturated pixels, they should be masked.
         threshold : float
             Threshold value [0, 1] for the SMO image.
@@ -124,7 +136,8 @@ class SMO:
         -------
         scipy.stats.rv_continuous
         """
-        self._check_dim(masked_image)
+        self._check_dim(image)
+        masked_image = self._check_masked(image)
         return bg_rv(
             masked_image,
             sigma=self.sigma,
@@ -133,7 +146,7 @@ class SMO:
         )
 
     def bg_probability(
-        self, masked_image: np.ma.MaskedArray, *, threshold: float = 0.05
+        self, image: np.ndarray | np.ma.MaskedArray, *, threshold: float = 0.05
     ) -> np.ma.MaskedArray:
         """Returns the probability that each pixel doesn't belong to the background.
 
@@ -142,7 +155,7 @@ class SMO:
 
         Parameters
         ----------
-        masked_image : numpy.ma.MaskedArray
+        image : numpy.ndarray | numpy.ma.MaskedArray
             Image. If there are saturated pixels, they should be masked.
         threshold : float
             Threshold value [0, 1] for the SMO image.
@@ -152,5 +165,6 @@ class SMO:
         np.ma.MaskedArray
             The output shares the input's mask.
         """
+        masked_image = self._check_masked(image)
         out = self.bg_rv(masked_image, threshold=threshold).cdf(masked_image)
         return np.ma.MaskedArray(out, masked_image.mask)

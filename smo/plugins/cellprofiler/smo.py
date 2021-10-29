@@ -101,10 +101,17 @@ percentile subtracted.
         )
         self.saturation = Float(
             text="Saturation intensity",
-            value=-np.inf,
+            value="nan",
             doc="Pixels with intensity greater or equal than this value are masked."
             " It is important to mask saturated areas, otherwise the algorithm would"
-            " recognize them as background.",
+            " recognize them as background."
+            "\n"
+            "The default value 'nan', uses the image maximum."
+            "\n"
+            "CellProfiler rescales the image to a 0-1 range based on the metadata."
+            " Hence, 1 could be an appropriate value. But, if the metadata is missing,"
+            " it uses the maximum value allowable by the data type, e.g. 2^16 for"
+            " 16-bit images, even if the underlying data saturates at a lower value.",
         )
         self.sigma = Float(
             text="Smoothing scale",
@@ -161,8 +168,12 @@ percentile subtracted.
     def run(self, workspace):
         x = workspace.image_set.get_image(self.x_name.value)
 
+        saturation = self.saturation.value
+        if np.isnan(saturation):
+            saturation = x.image.max()
+
         image = np.ma.MaskedArray(x.image, ~x.mask)
-        image = np.ma.masked_greater_equal(image, self.saturation.value)
+        image = np.ma.masked_greater_equal(image, saturation)
 
         threshold = self.smo_threshold.value / 100
         bg_quantile = self.bg_percentile.value / 100
