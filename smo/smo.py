@@ -17,42 +17,32 @@ def _euclidean_norm(x: list[np.ndarray]) -> np.ndarray:
     return np.sqrt(sum(xi ** 2 for xi in x))
 
 
-def _filter(
-    filter: callable, input: np.ndarray | np.ma.MaskedArray, **kwargs
-) -> np.ma.MaskedArray:
+def _filter(filter: callable, input: np.ma.MaskedArray, **kwargs) -> np.ma.MaskedArray:
     """Applies a scipy.ndimage filter respecting the mask.
 
     Parameters
     ----------
     filter : callable
-        A scipy.ndimage filter, supporting `mode="constant"`.
-    input : numpy.ndarray | numpy.ma.MaskedArray
-        If it is not a MaskedArray, it is converted to a MaskedArray.
+        A scipy.ndimage filter, supporting `mode="mirror"`.
+    input : numpy.ma.MaskedArray
 
     Keyword arguments are passed to filter.
 
     Returns
     -------
     numpy.ma.MaskedArray
-        The mask is shared with the input image.
-
-    Notes
-    -----
-    Inspired on https://stackoverflow.com/a/36307291,
-    which gives the same result as astropy.convolve.
     """
     if kwargs.get("output") is not None:
         raise ValueError("Argument output is not respected for MaskedArray.")
 
-    # mask=None creates a np.zeros_like(input.data, bool) if no mask is provided.
-    input = np.ma.MaskedArray(input, mask=None)
-
-    out = filter(input.filled(0), **kwargs, mode="constant")
-    norm = filter((~input.mask).astype(float), **kwargs, mode="constant")
-    with np.errstate(divide="ignore", invalid="ignore"):
-        out = np.where(input.mask, np.nan, out / norm)
-
-    return np.ma.MaskedArray(out, input.mask)
+    if np.ma.is_masked(input):
+        out = filter(input.filled(0), **kwargs, mode="mirror")
+        mask = ~filter(~input.mask, **kwargs, mode="mirror")
+        return np.ma.MaskedArray(out, mask)
+    else:
+        out = filter(input.data, **kwargs, mode="mirror")
+        mask = input.mask
+        return np.ma.MaskedArray(out, mask)
 
 
 def _normalized_gradient(input: np.ma.MaskedArray) -> list[np.ma.MaskedArray]:
@@ -103,8 +93,8 @@ def smo(
     Sigma and size are scale parameters,
     and should be less than the typical object size.
     """
-    input = input.astype(float, copy=False)
-    out = _filter(gaussian_filter, input, sigma=sigma)
+    out = np.ma.MaskedArray(input, dtype=float, copy=False)
+    out = _filter(gaussian_filter, out, sigma=sigma)
     out = _normalized_gradient(out)
     out = [_filter(uniform_filter, x, size=size) for x in out]
     out = _euclidean_norm(out)
