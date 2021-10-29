@@ -35,7 +35,7 @@ def smo_mask(
         )
 
     smo_image = smo(masked_image, sigma=sigma, size=size)
-    return (smo_image < threshold) & ~masked_image.mask
+    return (smo_image < threshold).filled(False)
 
 
 def bg_rv(
