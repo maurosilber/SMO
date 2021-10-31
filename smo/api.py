@@ -36,10 +36,10 @@ class SMO:
         self.ndim = len(shape)
         self.smo_rv = smo_rv(shape, sigma=sigma, size=size, random_state=random_state)
 
-    def _check_dim(self, image: np.ndarray):
-        """Checks that image has the appropriate dimension.
+    def _check_image(self, image: np.ndarray | np.ma.MaskedArray) -> np.ma.MaskedArray:
+        """Checks that the image has the appropiate dimension and has a mask.
 
-        It should be checked every time self.smo_rv is called.
+        If image is not masked, the maximum intenstiy values are masked.
         """
         if image.ndim != self.ndim:
             raise ValueError(
@@ -47,17 +47,13 @@ class SMO:
                 f"while this SMO was constructed for dimension {self.ndim}."
             )
 
-    def _check_masked(self, image: np.ndarray | np.ma.MaskedArray) -> np.ma.MaskedArray:
-        """If image is not masked, mask the maximum intenstiy values."""
         if isinstance(image, np.ma.MaskedArray):
             return image
+        else:
+            saturation = image.max()
+            return np.ma.masked_greater_equal(image, saturation)
 
-        saturation = image.max()
-        return np.ma.masked_greater_equal(image, saturation)
-
-    def smo_image(
-        self, image: np.ndarray | np.ma.MaskedArray
-    ) -> np.ndarray | np.ma.MaskedArray:
+    def smo_image(self, image: np.ndarray | np.ma.MaskedArray) -> np.ma.MaskedArray:
         """Applies the Silver Mountain Operator (SMO) to a scalar field.
 
         Parameters
@@ -67,29 +63,28 @@ class SMO:
 
         Returns
         -------
-        numpy.ndarray | np.ma.MaskedArray
+        np.ma.MaskedArray
         """
+        image = self._check_image(image)
         return smo(image, sigma=self.sigma, size=self.size)
 
     def smo_probability(
         self, image: np.ndarray | np.ma.MaskedArray
-    ) -> np.ndarray | np.ma.MaskedArray:
+    ) -> np.ma.MaskedArray:
         """Applies the Silver Mountain Operator (SMO) to a scalar field.
 
         Parameters
         ----------
         input : numpy.ndarray | np.ma.MaskedArray
-            Input field.
+            Input field. If there are saturated pixels, they should be masked.
 
         Returns
         -------
-        numpy.ndarray | np.ma.MaskedArray
+        np.ma.MaskedArray
         """
-        self._check_dim(image)
-        smo_prob = self.smo_rv.cdf(self.smo_image(image))
-        if isinstance(image, np.ma.MaskedArray):
-            smo_prob = np.ma.MaskedArray(smo_prob, image.mask)
-        return smo_prob
+        image = self.smo_image(image)
+        prob = self.smo_rv.cdf(image.data)
+        return np.ma.MaskedArray(prob, image.mask)
 
     def smo_mask(
         self, image: np.ndarray | np.ma.MaskedArray, *, threshold: float = 0.05
@@ -107,10 +102,9 @@ class SMO:
         -------
         numpy.ndarray of booleans
         """
-        self._check_dim(image)
-        masked_image = self._check_masked(image)
+        image = self._check_image(image)
         return smo_mask(
-            masked_image,
+            image,
             sigma=self.sigma,
             size=self.size,
             threshold=self.smo_rv.ppf(threshold),
@@ -136,10 +130,9 @@ class SMO:
         -------
         scipy.stats.rv_continuous
         """
-        self._check_dim(image)
-        masked_image = self._check_masked(image)
+        image = self._check_image(image)
         return bg_rv(
-            masked_image,
+            image,
             sigma=self.sigma,
             size=self.size,
             threshold=self.smo_rv.ppf(threshold),
@@ -163,8 +156,8 @@ class SMO:
         Returns
         -------
         np.ma.MaskedArray
-            The output shares the input's mask.
+            If the input has a mask, it is shared by the output.
         """
-        masked_image = self._check_masked(image)
-        out = self.bg_rv(masked_image, threshold=threshold).cdf(masked_image)
-        return np.ma.MaskedArray(out, masked_image.mask)
+        image = self._check_image(image)
+        prob = self.bg_rv(image, threshold=threshold).cdf(image.data)
+        return np.ma.MaskedArray(prob, image.mask)
