@@ -48,6 +48,20 @@ def smo_probability(
     return smo.smo_probability(image)
 
 
+def smo_mask(
+    image: ImageData,
+    mask: Optional[LabelsData],
+    sigma: SigmaSlider,
+    size: SizeSlider,
+    threshold: Probability = 0.05,
+) -> ImageData:
+    if mask is not None:
+        image = np.ma.MaskedArray(image, mask)
+
+    smo = SMO(sigma=sigma, size=size, shape=SHAPE)
+    return smo.smo_mask(image, threshold=threshold)
+
+
 def background_correction(
     image: ImageData,
     mask: Optional[LabelsData],
@@ -83,6 +97,7 @@ def napari_experimental_provide_function():
     return [
         smo_image,
         smo_probability,
+        smo_mask,
         background_correction,
         background_probability,
     ]
