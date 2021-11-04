@@ -13,13 +13,27 @@ pip install smo
 ## Plugins
 ### Napari
 
-A [napari](https://napari.org) plugin is available. Just `pip` install this package.
+A [napari](https://napari.org) plugin is available.
 
-## CellProfiler
+To intall:
+
+In napari, go to `Plugins > Install/Uninstall Plugins...` in the top menu, search for `smo` and click on the install button.
+
+Or, just `pip` install this package in the napari environment.
+
+### CellProfiler
 
 A [CellProfiler](https://cellprofiler.org) plugin in available in the `smo/plugins/cellprofiler` folder.
 
-Save [this file](https://github.com/maurosilber/SMO/tree/main/smo/plugins/cellprofiler/smo.py) into your CellProfiler plugins folder.
+Save [this file](https://raw.githubusercontent.com/maurosilber/SMO/main/smo/plugins/cellprofiler/smo.py) into your CellProfiler plugins folder.
+
+### ImageJ / FIJI
+
+An [ImageJ](https://imagej.net) plugin is available in the `smo/plugins/imagej` folder.
+
+Save [this file](https://raw.githubusercontent.com/maurosilber/SMO/main/smo/plugins/imagej/smo.py) into your ImageJ plugins folder.
+
+Note: the ImageJ plugin does not check that saturated pixels are properly excluded.
 
 ## Example
 

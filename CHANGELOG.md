@@ -2,6 +2,7 @@
 
 ## Master
 
+- Added ImageJ plugin
 - Added CellProfiler plugin
 - Added napari plugin
 - Added handling of masked arrays.
