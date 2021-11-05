@@ -15,23 +15,41 @@ pip install smo
 
 A [napari](https://napari.org) plugin is available.
 
-To intall:
+To install:
 
-In napari, go to `Plugins > Install/Uninstall Plugins...` in the top menu, search for `smo` and click on the install button.
+- Option 1: in napari, go to `Plugins > Install/Uninstall Plugins...` in the top menu, search for `smo` and click on the install button.
 
-Or, just `pip` install this package in the napari environment.
+- Option 2: just `pip` install this package in the napari environment.
+
+It will appear in the `Plugins` menu.
 
 ### CellProfiler
 
 A [CellProfiler](https://cellprofiler.org) plugin in available in the `smo/plugins/cellprofiler` folder.
 
-Save [this file](https://raw.githubusercontent.com/maurosilber/SMO/main/smo/plugins/cellprofiler/smo.py) into your CellProfiler plugins folder.
+![](images/CellProfiler_SMO.png)
+
+To install, save [this file](https://raw.githubusercontent.com/maurosilber/SMO/main/smo/plugins/cellprofiler/smo.py) into your CellProfiler plugins folder. You can find (or change) the location of your plugins directory in `File > Preferences > CellProfiler plugins directory`.
 
 ### ImageJ / FIJI
 
 An [ImageJ](https://imagej.net) plugin is available in the `smo/plugins/imagej` folder.
 
-Save [this file](https://raw.githubusercontent.com/maurosilber/SMO/main/smo/plugins/imagej/smo.py) into your ImageJ plugins folder.
+![](images/ImageJ_SMO.png)
+
+To install, download [this file](https://raw.githubusercontent.com/maurosilber/SMO/main/smo/plugins/imagej/smo.py) and:
+
+- Option 1: in the ImageJ main window, click on `Plugins > Install... (Ctrl+Shift+M)`, which opens a file chooser dialog. Browse and select the downloaded file. It will prompt to restart ImageJ for changes to take effect.
+
+- Option 2: copy into your ImageJ plugins folder (`File > Show Folder > Plugins`).
+
+To use the plugin, type `smo` on the bottom right search box:
+
+![](images/ImageJ_MainWindow.png)
+
+select `smo` in the `Quick Search` window and click on the `Run` button.
+
+![](images/ImageJ_QuickSearch.png)
 
 Note: the ImageJ plugin does not check that saturated pixels are properly excluded.
 
@@ -58,7 +76,7 @@ bg_rv.ppf(0.5)
 
 ## Development
 
-Code style is enforced via pre-commit hooks. To set up a develoment environment, clone the repository, optionally create a virtual environment, install the [dev] extras and the pre-commit hooks:
+Code style is enforced via pre-commit hooks. To set up a development environment, clone the repository, optionally create a virtual environment, install the [dev] extras and the pre-commit hooks:
 
 ```
 git clone https://github.com/maurosilber/SMO
