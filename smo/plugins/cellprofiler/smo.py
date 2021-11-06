@@ -48,8 +48,8 @@ The default output is a the input image with the median background subtracted.
 
 Other useful outputs are:
 - Background probability: could be used as input for segmentation algorithms.
-- SMO probability or mask: could be used as input for fitting a surface in case
-of non-homogeneous backgrounds.
+- Background mask or SMO probability: could be used as input for fitting a surface in
+case of non-homogeneous backgrounds.
 
 Technical notes
 ^^^^^^^^^^^^^^^
@@ -66,7 +66,7 @@ References
 class Options(Enum):
     smo_image = "SMO image"
     smo_probability = "SMO probability"
-    smo_mask = "SMO mask"
+    bg_mask = "Background mask"
     bg_probability = "Background probability"
     bg_correction = "Background correction"
 
@@ -91,8 +91,8 @@ class SMO(ImageProcessing):
 the gradient direction.
 - *{Options.smo_probability.value}*: the SMO image rescaled with the CDF of the SMO
 distribution for an uncorrelated background only image.
-- *{Options.smo_mask.value}*: the SMO mask used to select background pixels from the
-input image.
+- *{Options.bg_mask.value}*: the input image with the mask of selected background
+pixels.
 - *{Options.bg_probability.value}*: the input image rescaled with the CDF of the
 computed background distribution.
 - *{Options.bg_correction.value}*: the input image with the chosen background intensity
@@ -135,9 +135,9 @@ percentile subtracted.
             value=5,
             minval=0,
             maxval=100,
-            doc="Percentile of the SMO distribution to use as threshold. "
-            "The default value of 5 means that around 5% of the background pixels"
-            " will be used to compute the background distribution. "
+            doc="Percentile of the SMO null hypothesis distribution to use as "
+            "threshold. The default value of 5 means that around 5% of the background "
+            "pixels will be used to compute the background distribution. "
             "A higher threshold can fail to exclude non-background pixels,"
             " while a lower threshold can fail to include enough pixels"
             " for an accurate estimation.",
@@ -178,13 +178,15 @@ percentile subtracted.
         threshold = self.smo_threshold.value / 100
         bg_quantile = self.bg_percentile.value / 100
 
-        smo = _SMO(sigma=self.sigma.value, size=self.size.value, shape=(1024, 1024))
+        smo: _SMO = _SMO(
+            sigma=self.sigma.value, size=self.size.value, shape=(1024, 1024)
+        )
         if self.output_choice.value == Options.smo_image.value:
             y_data = smo.smo_image(image)
         elif self.output_choice.value == Options.smo_probability.value:
             y_data = smo.smo_probability(image)
-        elif self.output_choice.value == Options.smo_mask.value:
-            y_data = smo.smo_mask(image, threshold=threshold)
+        elif self.output_choice.value == Options.bg_mask.value:
+            y_data = smo.bg_mask(image, threshold=threshold)
         elif self.output_choice.value == Options.bg_probability.value:
             y_data = smo.bg_probability(image, threshold=threshold)
         elif self.output_choice.value == Options.bg_correction.value:
@@ -229,7 +231,7 @@ percentile subtracted.
         hist_kwargs = dict(bins="auto", density=True, histtype="step")
         ax.hist(image.compressed(), label="All", **hist_kwargs)
         ax.hist(
-            image[smo.smo_mask(image, threshold=threshold)],
+            smo.bg_mask(image, threshold=threshold).compressed(),
             label="Background",
             **hist_kwargs,
         )
@@ -255,7 +257,7 @@ percentile subtracted.
         ax.set(title="Background probability")
 
 
-# All code below is copied from commit: ae05a9fbc03f33d98e08f97f21a81bb05e14f9c5
+# All code below is copied from commit: 40d27ec538cf2ad4a69d37eb0f3518b459d6ddc0
 # See https://github.com/maurosilber/SMO
 
 ############
@@ -265,7 +267,7 @@ percentile subtracted.
 
 # import numpy as np
 
-# from .background import bg_rv, smo_mask
+# from .background import bg_mask, bg_rv
 # from .smo import rv_continuous, smo, smo_rv
 
 
@@ -275,8 +277,13 @@ class _SMO:
     ):
         """Wrapper to simplify the use of the Silver Mountain Operator (SMO).
 
-        Most methods requiere a MaskedArray with saturated pixels masked. If provided
-        as a non-MaskedArray, a mask is generated for the image maximum.
+        The SMO instance keeps track of the distribution of the null hypothesis in its
+        `smo_rv` attribute, calculated as a random uniform image of shape given by the
+        shape parameter.
+
+        All methods require a MaskedArray as input, with saturated pixels masked.
+        If it is not provided as a MaskedArray, a mask is generated for the image
+        maximum.
 
         Parameters
         ----------
@@ -285,24 +292,25 @@ class _SMO:
         size : int or sequence of int
             Averaging window size.
         shape : tuple of ints
-            Shape of the random image used to estimate the SMO distribution.
+            Shape of the random image used to estimate the SMO null hypothesis
+            distribution.
         random_state : numpy.random.Generator
-            By default, numpy.random.default_rng(seed=42).
+            To generate the random image. By default, numpy.random.default_rng(seed=42).
 
         Notes
         -----
         Sigma and size are scale parameters,
-        and should be less than the typical object size.
+        and should be less than the typical foreground object size.
         """
         self.sigma = sigma
         self.size = size
         self.ndim = len(shape)
         self.smo_rv = smo_rv(shape, sigma=sigma, size=size, random_state=random_state)
 
-    def _check_dim(self, image: np.ndarray):
-        """Checks that image has the appropriate dimension.
+    def _check_image(self, image: np.ndarray | np.ma.MaskedArray) -> np.ma.MaskedArray:
+        """Checks that the image has the appropriate dimension and has a mask.
 
-        It should be checked every time self.smo_rv is called.
+        If image is not masked, the maximum intensity values are masked.
         """
         if image.ndim != self.ndim:
             raise ValueError(
@@ -310,17 +318,13 @@ class _SMO:
                 f"while this SMO was constructed for dimension {self.ndim}."
             )
 
-    def _check_masked(self, image: np.ndarray | np.ma.MaskedArray) -> np.ma.MaskedArray:
-        """If image is not masked, mask the maximum intenstiy values."""
         if isinstance(image, np.ma.MaskedArray):
             return image
+        else:
+            saturation = image.max()
+            return np.ma.masked_greater_equal(image, saturation)
 
-        saturation = image.max()
-        return np.ma.masked_greater_equal(image, saturation)
-
-    def smo_image(
-        self, image: np.ndarray | np.ma.MaskedArray
-    ) -> np.ndarray | np.ma.MaskedArray:
+    def smo_image(self, image: np.ndarray | np.ma.MaskedArray) -> np.ma.MaskedArray:
         """Applies the Silver Mountain Operator (SMO) to a scalar field.
 
         Parameters
@@ -330,50 +334,54 @@ class _SMO:
 
         Returns
         -------
-        numpy.ndarray | np.ma.MaskedArray
+        np.ma.MaskedArray
         """
+        image = self._check_image(image)
         return smo(image, sigma=self.sigma, size=self.size)
 
     def smo_probability(
         self, image: np.ndarray | np.ma.MaskedArray
-    ) -> np.ndarray | np.ma.MaskedArray:
-        """Applies the Silver Mountain Operator (SMO) to a scalar field.
+    ) -> np.ma.MaskedArray:
+        """Applies the Silver Mountain Operator (SMO) to a scalar field, and
+        rescales it with the null hypothesis distribution (self.smo_rv).
+
+        Each pixel has the probability of not belonging to the background,
+        according to SMO.
 
         Parameters
         ----------
         input : numpy.ndarray | np.ma.MaskedArray
-            Input field.
+            Input field. If there are saturated pixels, they should be masked.
 
         Returns
         -------
-        numpy.ndarray | np.ma.MaskedArray
+        np.ma.MaskedArray
         """
-        self._check_dim(image)
-        smo_prob = self.smo_rv.cdf(self.smo_image(image))
-        if isinstance(image, np.ma.MaskedArray):
-            smo_prob = np.ma.MaskedArray(smo_prob, image.mask)
-        return smo_prob
+        image = self.smo_image(image)
+        prob = self.smo_rv.cdf(image.data)
+        return np.ma.MaskedArray(prob, image.mask)
 
-    def smo_mask(
+    def bg_mask(
         self, image: np.ndarray | np.ma.MaskedArray, *, threshold: float = 0.05
-    ) -> np.ndarray:
-        """Returns the mask of (some) background noise.
+    ) -> np.ma.MaskedArray:
+        """Returns the input image with only SMO-chosen background pixels unmasked.
+
+        As it is a statistical test, some foreground pixels might be included.
 
         Parameters
         ----------
         image : numpy.ndarray | numpy.ma.MaskedArray
             Image. If there are saturated pixels, they should be masked.
         threshold : float
-            Threshold value [0, 1] for the SMO image.
+            Threshold value [0, 1] for the SMO probability image.
 
         Returns
         -------
-        numpy.ndarray of booleans
+        numpy.ma.MaskedArray
         """
-        self._check_dim(image)
-        masked_image = self._check_masked(image)
-        return smo_mask(
-            masked_image,
+        image = self._check_image(image)
+        return bg_mask(
+            image,
             sigma=self.sigma,
             size=self.size,
             threshold=self.smo_rv.ppf(threshold),
@@ -382,27 +390,29 @@ class _SMO:
     def bg_rv(
         self, image: np.ndarray | np.ma.MaskedArray, *, threshold: float = 0.05
     ) -> rv_continuous:
-        """Returns the distribution of background noise.
+        """Returns the distribution of background intensity.
 
         It returns an instance of scipy.stats.rv_histogram.
         Use .median() to get the median value,
         or .ppf(percentile) to calculate any other desired percentile.
+
+        As some foreground pixels might be wrongly included, it is not recommended to
+        trust percentiles near to 100.
 
         Parameters
         ----------
         image : numpy.ndarray | numpy.ma.MaskedArray
             Image. If there are saturated pixels, they should be masked.
         threshold : float
-            Threshold value [0, 1] for the SMO image.
+            Threshold value [0, 1] for the SMO probability image.
 
         Returns
         -------
         scipy.stats.rv_continuous
         """
-        self._check_dim(image)
-        masked_image = self._check_masked(image)
+        image = self._check_image(image)
         return bg_rv(
-            masked_image,
+            image,
             sigma=self.sigma,
             size=self.size,
             threshold=self.smo_rv.ppf(threshold),
@@ -421,16 +431,16 @@ class _SMO:
         image : numpy.ndarray | numpy.ma.MaskedArray
             Image. If there are saturated pixels, they should be masked.
         threshold : float
-            Threshold value [0, 1] for the SMO image.
+            Threshold value [0, 1] for the SMO probability image.
 
         Returns
         -------
         np.ma.MaskedArray
-            The output shares the input's mask.
+            If the input has a mask, it is shared by the output.
         """
-        masked_image = self._check_masked(image)
-        out = self.bg_rv(masked_image, threshold=threshold).cdf(masked_image)
-        return np.ma.MaskedArray(out, masked_image.mask)
+        image = self._check_image(image)
+        prob = self.bg_rv(image, threshold=threshold).cdf(image.data)
+        return np.ma.MaskedArray(prob, image.mask)
 
 
 ############
@@ -529,7 +539,7 @@ def smo(
     Notes
     -----
     Sigma and size are scale parameters,
-    and should be less than the typical object size.
+    and should be less than the typical foreground object size.
     """
     out = np.ma.MaskedArray(input, dtype=float, copy=False)
     out = _filter(gaussian_filter, out, sigma=sigma)
@@ -546,7 +556,11 @@ def smo(
 def smo_rv(
     shape: tuple[int, ...], *, sigma: float, size: int, random_state=None
 ) -> rv_continuous:
-    """Generates a random variable of the SMO operator for a given sigma and size.
+    """Generates a random variable of the null hypothesis for the SMO operator
+    for a given sigma and size. The null hypothesis is that pixels are uncorrelated
+    and drawn from the same distribution.
+
+    In particular, it uses a uniform distribution, as SMO is non-parametric.
 
     Parameters
     ----------
@@ -579,10 +593,12 @@ def smo_rv(
 # from .smo import _rv, rv_continuous, smo
 
 
-def smo_mask(
+def bg_mask(
     masked_image: np.ma.MaskedArray, *, sigma: float, size: int, threshold: float
-) -> np.ndarray:
-    """Returns the mask of (some) background noise.
+) -> np.ma.MaskedArray:
+    """Returns the input image with only SMO-chosen background pixels unmasked.
+
+    As it is a statistical test, some foreground pixels might be included.
 
     Parameters
     ----------
@@ -593,16 +609,17 @@ def smo_mask(
     size : int or sequence of int
         Averaging window size.
     threshold : float
-        Threshold value [0, 1] for the SMO image.
+        Threshold value [0, 1] for the SMO image. Use `smo.smo.smo_rv` to select
+        a proper value, such as `smo_rv.ppf(0.05)`.
 
     Returns
     -------
-    numpy.ndarray of booleans
+    numpy.ma.MaskedArray
 
     Notes
     -----
     Sigma and size are scale parameters,
-    and should be less than the typical object size.
+    and should be less than the typical foreground object size.
     """
     if not np.ma.isMaskedArray(masked_image):
         raise TypeError(
@@ -611,17 +628,21 @@ def smo_mask(
         )
 
     smo_image = smo(masked_image, sigma=sigma, size=size)
-    return (smo_image < threshold).filled(False)
+    mask = (smo_image > threshold).filled(True)
+    return np.ma.MaskedArray(masked_image, mask)
 
 
 def bg_rv(
     masked_image: np.ma.MaskedArray, *, sigma: float, size: int, threshold: float
 ) -> rv_continuous:
-    """Returns the distribution of background noise.
+    """Returns the distribution of background intensity.
 
     It returns an instance of scipy.stats.rv_histogram.
     Use .median() to get the median value,
     or .ppf(percentile) to calculate any other desired percentile.
+
+    As some foreground pixels might be wrongly included, it is not recommended to
+    trust percentiles near to 100.
 
     Parameters
     ----------
@@ -632,7 +653,8 @@ def bg_rv(
     size : int or sequence of int
         Averaging window size.
     threshold : float
-        Threshold value [0, 1] for the SMO image.
+        Threshold value [0, 1] for the SMO image. Use `smo.smo.smo_rv` to select
+        a proper value, such as `smo_rv.ppf(0.05)`.
 
     Returns
     -------
@@ -641,8 +663,7 @@ def bg_rv(
     Notes
     -----
     Sigma and size are scale parameters,
-    and should be less than the typical object size.
+    and should be less than the typical foreground object size.
     """
-    mask = smo_mask(masked_image, sigma=sigma, size=size, threshold=threshold)
-    background_values = masked_image[mask].compressed()
-    return _rv(background_values)
+    background = bg_mask(masked_image, sigma=sigma, size=size, threshold=threshold)
+    return _rv(background.compressed())
