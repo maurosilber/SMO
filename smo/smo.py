@@ -91,7 +91,7 @@ def smo(
     Notes
     -----
     Sigma and size are scale parameters,
-    and should be less than the typical object size.
+    and should be less than the typical foreground object size.
     """
     out = np.ma.MaskedArray(input, dtype=float, copy=False)
     out = _filter(gaussian_filter, out, sigma=sigma)
@@ -108,7 +108,11 @@ def smo(
 def smo_rv(
     shape: tuple[int, ...], *, sigma: float, size: int, random_state=None
 ) -> rv_continuous:
-    """Generates a random variable of the SMO operator for a given sigma and size.
+    """Generates a random variable of the null hypothesis for the SMO operator
+    for a given sigma and size. The null hypothesis is that pixels are uncorrelated
+    and drawn from the same distribution.
+
+    In particular, it uses a uniform distribution, as SMO is non-parametric.
 
     Parameters
     ----------

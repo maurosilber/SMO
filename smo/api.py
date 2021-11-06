@@ -12,8 +12,13 @@ class SMO:
     ):
         """Wrapper to simplify the use of the Silver Mountain Operator (SMO).
 
-        Most methods requiere a MaskedArray with saturated pixels masked. If provided
-        as a non-MaskedArray, a mask is generated for the image maximum.
+        The SMO instance keeps track of the distribution of the null hypothesis in its
+        `smo_rv` attribute, calculated as a random uniform image of shape given by the
+        shape parameter.
+
+        All methods require a MaskedArray as input, with saturated pixels masked.
+        If it is not provided as a MaskedArray, a mask is generated for the image
+        maximum.
 
         Parameters
         ----------
@@ -22,14 +27,15 @@ class SMO:
         size : int or sequence of int
             Averaging window size.
         shape : tuple of ints
-            Shape of the random image used to estimate the SMO distribution.
+            Shape of the random image used to estimate the SMO null hypothesis
+            distribution.
         random_state : numpy.random.Generator
-            By default, numpy.random.default_rng(seed=42).
+            To generate the random image. By default, numpy.random.default_rng(seed=42).
 
         Notes
         -----
         Sigma and size are scale parameters,
-        and should be less than the typical object size.
+        and should be less than the typical foreground object size.
         """
         self.sigma = sigma
         self.size = size
@@ -37,9 +43,9 @@ class SMO:
         self.smo_rv = smo_rv(shape, sigma=sigma, size=size, random_state=random_state)
 
     def _check_image(self, image: np.ndarray | np.ma.MaskedArray) -> np.ma.MaskedArray:
-        """Checks that the image has the appropiate dimension and has a mask.
+        """Checks that the image has the appropriate dimension and has a mask.
 
-        If image is not masked, the maximum intenstiy values are masked.
+        If image is not masked, the maximum intensity values are masked.
         """
         if image.ndim != self.ndim:
             raise ValueError(
@@ -71,7 +77,11 @@ class SMO:
     def smo_probability(
         self, image: np.ndarray | np.ma.MaskedArray
     ) -> np.ma.MaskedArray:
-        """Applies the Silver Mountain Operator (SMO) to a scalar field.
+        """Applies the Silver Mountain Operator (SMO) to a scalar field, and
+        rescales it with the null hypothesis distribution (self.smo_rv).
+
+        Each pixel has the probability of not belonging to the background,
+        according to SMO.
 
         Parameters
         ----------
@@ -98,7 +108,7 @@ class SMO:
         image : numpy.ndarray | numpy.ma.MaskedArray
             Image. If there are saturated pixels, they should be masked.
         threshold : float
-            Threshold value [0, 1] for the SMO image.
+            Threshold value [0, 1] for the SMO probability image.
 
         Returns
         -------
@@ -115,18 +125,21 @@ class SMO:
     def bg_rv(
         self, image: np.ndarray | np.ma.MaskedArray, *, threshold: float = 0.05
     ) -> rv_continuous:
-        """Returns the distribution of background noise.
+        """Returns the distribution of background intensity.
 
         It returns an instance of scipy.stats.rv_histogram.
         Use .median() to get the median value,
         or .ppf(percentile) to calculate any other desired percentile.
+
+        As some foreground pixels might be wrongly included, it is not recommended to
+        trust percentiles near to 100.
 
         Parameters
         ----------
         image : numpy.ndarray | numpy.ma.MaskedArray
             Image. If there are saturated pixels, they should be masked.
         threshold : float
-            Threshold value [0, 1] for the SMO image.
+            Threshold value [0, 1] for the SMO probability image.
 
         Returns
         -------
@@ -153,7 +166,7 @@ class SMO:
         image : numpy.ndarray | numpy.ma.MaskedArray
             Image. If there are saturated pixels, they should be masked.
         threshold : float
-            Threshold value [0, 1] for the SMO image.
+            Threshold value [0, 1] for the SMO probability image.
 
         Returns
         -------

@@ -19,7 +19,8 @@ def bg_mask(
     size : int or sequence of int
         Averaging window size.
     threshold : float
-        Threshold value [0, 1] for the SMO image.
+        Threshold value [0, 1] for the SMO image. Use `smo.smo.smo_rv` to select
+        a proper value, such as `smo_rv.ppf(0.05)`.
 
     Returns
     -------
@@ -28,7 +29,7 @@ def bg_mask(
     Notes
     -----
     Sigma and size are scale parameters,
-    and should be less than the typical object size.
+    and should be less than the typical foreground object size.
     """
     if not np.ma.isMaskedArray(masked_image):
         raise TypeError(
@@ -44,11 +45,14 @@ def bg_mask(
 def bg_rv(
     masked_image: np.ma.MaskedArray, *, sigma: float, size: int, threshold: float
 ) -> rv_continuous:
-    """Returns the distribution of background noise.
+    """Returns the distribution of background intensity.
 
     It returns an instance of scipy.stats.rv_histogram.
     Use .median() to get the median value,
     or .ppf(percentile) to calculate any other desired percentile.
+
+    As some foreground pixels might be wrongly included, it is not recommended to
+    trust percentiles near to 100.
 
     Parameters
     ----------
@@ -59,7 +63,8 @@ def bg_rv(
     size : int or sequence of int
         Averaging window size.
     threshold : float
-        Threshold value [0, 1] for the SMO image.
+        Threshold value [0, 1] for the SMO image. Use `smo.smo.smo_rv` to select
+        a proper value, such as `smo_rv.ppf(0.05)`.
 
     Returns
     -------
@@ -68,7 +73,7 @@ def bg_rv(
     Notes
     -----
     Sigma and size are scale parameters,
-    and should be less than the typical object size.
+    and should be less than the typical foreground object size.
     """
     background = bg_mask(masked_image, sigma=sigma, size=size, threshold=threshold)
     return _rv(background.compressed())
