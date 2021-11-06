@@ -1,6 +1,6 @@
 # @ String (visibility=MESSAGE, value="<html>The SMO provides a robust estimation of the background dsitribution.<br>Consult the documentation at <a>https://github.com/maurosilber/SMO</a></html>", required=false) msg  # noqa: E501
 # @ImagePlus (label="Input") image
-# @String (label="Output", choices={"Background-corrected image", "SMO image", "SMO mask"}, style="radioButtonVertical") output_choice  # noqa: E501
+# @String (label="Output", choices={"Background-corrected image", "SMO image", "Background mask"}, style="radioButtonVertical") output_choice  # noqa: E501
 # @Float (label="Smoothing (sigma)", description="Size of the gaussian smoothing kernel.", style="slider,format:0.0", min=0, max=10, stepSize=0.1, value=0, persist=true) sigma  # noqa: E501
 # @Integer (label="Averaging window", description="Size of the gradient direction averaging kernel.", style="slider", min=3, max=21, stepSize=2, value=7, persist=true) size  # noqa: E501
 # @Float (label="SMO threshold", description="<html>Percentage of background pixels to include in the background distribution estimation.<br>A higher threshold leads to more foreground pixels being (incorrectly) included.</html>", style="slider,format:0.0", min=0, max=100, stepSize=1, value=5, persist=true) threshold  # noqa: E501
@@ -151,9 +151,11 @@ def main(image, sigma, size, threshold, percentile, output_choice, log, show_his
     random_smo_image = ImagePlus("random_smo_image", random_smo_image)
     smo_threshold = get_quantile(random_smo_image, threshold / 100)
 
-    # Threshold SMO image
+    # Threshold SMO image and apply mask
     smo_mask = create_mask(smo_image, smo_threshold, 1.0)
-    if output_choice == "SMO mask":
+    masked_image = ImagePlus("masked_image", image.duplicate())
+    apply_mask(masked_image, smo_mask)
+    if output_choice == "Background mask":
         if log:
             IJ.log(
                 ", ".join(
@@ -165,13 +167,9 @@ def main(image, sigma, size, threshold, percentile, output_choice, log, show_his
                     )
                 )
             )
-
-        smo_mask.setMinAndMax(0, 255)
-        return ImagePlus(output_choice, smo_mask)
+        return masked_image
 
     # Compute background
-    masked_image = ImagePlus("masked_image", image.duplicate())
-    apply_mask(masked_image, smo_mask)
     background = get_quantile(masked_image, percentile / 100)
     if show_histogram:
         HistogramWindow(masked_image)

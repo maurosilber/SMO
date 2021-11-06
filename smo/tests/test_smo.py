@@ -16,6 +16,6 @@ def test_smo_api():
     for image in (unmasked_image, masked_image):
         assert np.ma.isMaskedArray(smo.smo_image(image))
         assert np.ma.isMaskedArray(smo.smo_probability(image))
-        assert not np.ma.isMaskedArray(smo.smo_mask(image))
+        assert np.ma.isMaskedArray(smo.bg_mask(image))
         assert isinstance(smo.bg_rv(image), rv_continuous)
         assert np.ma.isMaskedArray(smo.bg_probability(image))

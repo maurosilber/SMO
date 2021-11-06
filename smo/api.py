@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .background import bg_rv, smo_mask
+from .background import bg_mask, bg_rv
 from .smo import rv_continuous, smo, smo_rv
 
 
@@ -86,10 +86,12 @@ class SMO:
         prob = self.smo_rv.cdf(image.data)
         return np.ma.MaskedArray(prob, image.mask)
 
-    def smo_mask(
+    def bg_mask(
         self, image: np.ndarray | np.ma.MaskedArray, *, threshold: float = 0.05
-    ) -> np.ndarray:
-        """Returns the mask of (some) background noise.
+    ) -> np.ma.MaskedArray:
+        """Returns the input image with only SMO-chosen background pixels unmasked.
+
+        As it is a statistical test, some foreground pixels might be included.
 
         Parameters
         ----------
@@ -100,10 +102,10 @@ class SMO:
 
         Returns
         -------
-        numpy.ndarray of booleans
+        numpy.ma.MaskedArray
         """
         image = self._check_image(image)
-        return smo_mask(
+        return bg_mask(
             image,
             sigma=self.sigma,
             size=self.size,

@@ -3,10 +3,12 @@ import numpy as np
 from .smo import _rv, rv_continuous, smo
 
 
-def smo_mask(
+def bg_mask(
     masked_image: np.ma.MaskedArray, *, sigma: float, size: int, threshold: float
-) -> np.ndarray:
-    """Returns the mask of (some) background noise.
+) -> np.ma.MaskedArray:
+    """Returns the input image with only SMO-chosen background pixels unmasked.
+
+    As it is a statistical test, some foreground pixels might be included.
 
     Parameters
     ----------
@@ -21,7 +23,7 @@ def smo_mask(
 
     Returns
     -------
-    numpy.ndarray of booleans
+    numpy.ma.MaskedArray
 
     Notes
     -----
@@ -35,7 +37,8 @@ def smo_mask(
         )
 
     smo_image = smo(masked_image, sigma=sigma, size=size)
-    return (smo_image < threshold).filled(False)
+    mask = (smo_image > threshold).filled(True)
+    return np.ma.MaskedArray(masked_image, mask)
 
 
 def bg_rv(
@@ -67,6 +70,5 @@ def bg_rv(
     Sigma and size are scale parameters,
     and should be less than the typical object size.
     """
-    mask = smo_mask(masked_image, sigma=sigma, size=size, threshold=threshold)
-    background_values = masked_image[mask].compressed()
-    return _rv(background_values)
+    background = bg_mask(masked_image, sigma=sigma, size=size, threshold=threshold)
+    return _rv(background.compressed())
