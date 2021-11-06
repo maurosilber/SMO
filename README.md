@@ -1,6 +1,25 @@
-# SMO: robust and unbiased background distribution estimation by exploiting lack of local correlation
+# SMO
 
 SMO is a Python package that implements the Silver Mountain Operator (SMO), which allows to recover an unbiased estimation of the background intensity distribution in a robust way.
+
+We provide an easy to use Python package and plugins for some of the major image processing softwares: [napari](https://napari.org), [CellProfiler](https://cellprofiler.org), and [ImageJ](https://imagej.net) / [FIJI](https://fiji.sc). See Plugins section below.
+
+## Usage
+
+To obtain a background-corrected image, it is as straightforward as:
+
+```python
+import skimage.data
+from smo.api import SMO
+
+image = skimage.data.human_mitosis()
+smo = SMO(sigma=0, size=7, shape=(1024, 1024))
+background_corrected_image = smo.bg_corrected(image)
+```
+
+where we used a sample image from `scikit-image`.
+
+A notebook detailing this and other possible uses is available here: [smo/examples/usage.ipynb](smo/examples/usage.ipynb).
 
 ## Installation
 
@@ -25,7 +44,7 @@ It will appear in the `Plugins` menu.
 
 ### CellProfiler
 
-A [CellProfiler](https://cellprofiler.org) plugin in available in the `smo/plugins/cellprofiler` folder.
+A [CellProfiler](https://cellprofiler.org) plugin in available in the [smo/plugins/cellprofiler](smo/plugins/cellprofiler) folder.
 
 ![](images/CellProfiler_SMO.png)
 
@@ -33,7 +52,7 @@ To install, save [this file](https://raw.githubusercontent.com/maurosilber/SMO/m
 
 ### ImageJ / FIJI
 
-An [ImageJ](https://imagej.net) plugin is available in the `smo/plugins/imagej` folder.
+An [ImageJ](https://imagej.net) / [FIJI](https://fiji.sc) plugin is available in the [smo/plugins/imagej](smo/plugins/imagej) folder.
 
 ![](images/ImageJ_SMO.png)
 
@@ -52,27 +71,6 @@ select `smo` in the `Quick Search` window and click on the `Run` button.
 ![](images/ImageJ_QuickSearch.png)
 
 Note: the ImageJ plugin does not check that saturated pixels are properly excluded.
-
-## Example
-
-```python
-import numpy as np
-import skimage.data
-from smo.api import SMO
-
-# Load image and mask saturated pixels
-image = skimage.data.human_mitosis()
-masked_image = np.ma.masked_greater_equal(image, 250)  # image is uint8 (0-255)
-
-# Create an instance of the SMO operator
-smo = SMO(sigma=1, size=7, shape=(1024, 1024))
-
-# Calculate its background distribution
-bg_rv = smo.bg_rv(masked_image)
-
-# Calculate the median background
-bg_rv.ppf(0.5)
-```
 
 ## Development
 
