@@ -122,6 +122,35 @@ class SMO:
             threshold=self.smo_rv.ppf(threshold),
         )
 
+    def bg_corrected(
+        self,
+        image: np.ndarray | np.ma.MaskedArray,
+        *,
+        statistic: callable = np.median,
+        threshold: float = 0.05,
+    ) -> np.ma.MaskedArray:
+        """Returns a background-corrected image by subtracting a value.calculated
+        by applying statistic to the sample of background pixels.
+
+        Parameters
+        ----------
+        image : numpy.ndarray | numpy.ma.MaskedArray
+            Image. If there are saturated pixels, they should be masked.
+        statistic : callable
+            Computes the value to subtract. It receives as input a 1D array of
+            background pixels.
+        threshold : float
+            Threshold value [0, 1] for the SMO probability image.
+
+        Returns
+        -------
+        np.ma.MaskedArray
+            If the input has a mask, it is shared by the output.
+        """
+        image = self._check_image(image)
+        bg = self.bg_mask(image, threshold=threshold)
+        return image - statistic(bg.compressed())
+
     def bg_rv(
         self, image: np.ndarray | np.ma.MaskedArray, *, threshold: float = 0.05
     ) -> rv_continuous:

@@ -17,5 +17,6 @@ def test_smo_api():
         assert np.ma.isMaskedArray(smo.smo_image(image))
         assert np.ma.isMaskedArray(smo.smo_probability(image))
         assert np.ma.isMaskedArray(smo.bg_mask(image))
+        assert np.ma.isMaskedArray(smo.bg_corrected(image))
         assert isinstance(smo.bg_rv(image), rv_continuous)
         assert np.ma.isMaskedArray(smo.bg_probability(image))
