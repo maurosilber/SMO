@@ -74,8 +74,11 @@ def background_correction(
         image = np.ma.MaskedArray(image, mask)
 
     smo = SMO(sigma=sigma, size=size, shape=SHAPE)
-    bg_rv = smo.bg_rv(image, threshold=threshold)
-    return image - bg_rv.ppf(background_quantile)
+    return smo.bg_corrected(
+        image,
+        threshold=threshold,
+        statistic=lambda x: np.quantile(x, background_quantile),
+    )
 
 
 def background_probability(
