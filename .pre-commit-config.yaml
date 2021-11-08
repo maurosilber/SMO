@@ -1,10 +1,10 @@
 repos:
 -   repo: https://github.com/ambv/black
-    rev: 21.8b0
+    rev: 21.10b0
     hooks:
     - id: black
 -   repo: https://github.com/timothycrosley/isort
-    rev: '5.9.3'
+    rev: '5.10.0'
     hooks:
     -   id: isort
         additional_dependencies: ['toml']
@@ -12,3 +12,10 @@ repos:
     rev: '3.9.2'
     hooks:
     - id: flake8
+-   repo: https://github.com/mwouts/jupytext
+    rev: v1.13.1
+    hooks:
+    - id: jupytext
+      args: [--sync, --pipe, black]
+      additional_dependencies:
+        - black==20.8b0
