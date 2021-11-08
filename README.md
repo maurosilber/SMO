@@ -4,6 +4,12 @@ SMO is a Python package that implements the Silver Mountain Operator (SMO), whic
 
 We provide an easy to use Python package and plugins for some of the major image processing softwares: [napari](https://napari.org), [CellProfiler](https://cellprofiler.org), and [ImageJ](https://imagej.net) / [FIJI](https://fiji.sc). See Plugins section below.
 
+## Citation
+
+To learn more about the theory behind SMO, you can read the [pre-print in BioRxiv](https://doi.org/10.1101/2021.11.09.467975).
+
+If you use this software, please cite that pre-print.
+
 ## Usage
 
 To obtain a background-corrected image, it is as straightforward as:

@@ -1,0 +1,64 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: >-
+  Robust and unbiased estimation of the background
+  distribution for automated quantitative imaging
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Mauro
+    family-names: Silberberg
+    email: maurosilber@df.uba.ar
+    orcid: 'https://orcid.org/0000-0002-2402-1100'
+    affiliation: >-
+      Department of Physics, FCEN, University of
+      Buenos Aires and IFIBA, CONICET, Buenos Aires.
+      C1428EHA, Argentina
+  - given-names: Hernán Edgardo
+    family-names: Grecco
+    email: hgrecco@df.uba.ar
+    affiliation: >-
+      Department of Physics, FCEN, University of
+      Buenos Aires and IFIBA, CONICET, Buenos Aires.
+      C1428EHA, Argentina; and, Department of
+      Systemic Cell Biology, Max Planck Institute of
+      Molecular Physiology, Dortmund, 44227, Germany
+    orcid: 'https://orcid.org/0000-0002-1165-4320'
+identifiers:
+  - type: doi
+    value: 10.1101/2021.11.09.467975
+    description: BioRxiv pre-print
+abstract: >-
+  Quantitative analysis of high-throughput microscopy
+  images requires robust automated algorithms.
+  Background estimation is usually the first step and
+  has an impact on all subsequent analysis, in
+  particular for foreground detection and calculation
+  of ratiometric quantities. Most methods recover
+  only a single background value, such as the median.
+  Those that aim to retrieve a background
+  distribution by dividing the intensity histogram
+  yield a biased estimation in images in non-trivial
+  cases. In this work, we present the first method to
+  recover an unbiased estimation of the background
+  distribution directly from an image and without any
+  additional input. Through a robust statistical
+  test, our method leverages the lack of local
+  spatial correlation in background pixels to select
+  a subset of pixels that accurately represent the
+  background distribution. This method is both fast
+  and simple to implement, as it only uses standard
+  mathematical operations and an averaging filter.
+  Additionally, the only parameter, the size of the
+  averaging filter, does not require fine tuning. The
+  obtained background distribution can be used to
+  test for foreground membership of individual
+  pixels, or to estimate confidence intervals in
+  derived quantities. We expect that the concepts
+  described in this work can help to develop a novel
+  family of robust segmentation methods.
+license: MIT
