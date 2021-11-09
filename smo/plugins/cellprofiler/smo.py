@@ -176,7 +176,6 @@ percentile subtracted.
         image = np.ma.masked_greater_equal(image, saturation)
 
         threshold = self.smo_threshold.value / 100
-        bg_quantile = self.bg_percentile.value / 100
 
         smo: _SMO = _SMO(
             sigma=self.sigma.value, size=self.size.value, shape=(1024, 1024)
@@ -190,8 +189,11 @@ percentile subtracted.
         elif self.output_choice.value == Options.bg_probability.value:
             y_data = smo.bg_probability(image, threshold=threshold)
         elif self.output_choice.value == Options.bg_correction.value:
-            bg_rv = smo.bg_rv(image, threshold=threshold)
-            y_data = image - bg_rv.ppf(bg_quantile)
+            y_data = smo.bg_corrected(
+                image,
+                threshold=threshold,
+                statistic=lambda x: np.percentile(x, self.bg_percentile.value),
+            )
 
         y = Image(
             dimensions=x.dimensions,
@@ -220,8 +222,8 @@ percentile subtracted.
         image: np.ma.MaskedArray = workspace.display_data.x_data
         smo: _SMO = workspace.display_data.smo
         threshold = self.smo_threshold.value / 100
-        bg_rv = smo.bg_rv(image, threshold=threshold)
-        bg_value = bg_rv.ppf(self.bg_percentile.value / 100)
+        background = smo.bg_mask(image, threshold=threshold).compressed()
+        bg_value = np.percentile(background, self.bg_percentile.value)
 
         subplot = figure.subplot(0, 0)
         subplot.imshow(image, cmap="plasma")
@@ -230,11 +232,7 @@ percentile subtracted.
         ax = figure.subplot(1, 1)
         hist_kwargs = dict(bins="auto", density=True, histtype="step")
         ax.hist(image.compressed(), label="All", **hist_kwargs)
-        ax.hist(
-            smo.bg_mask(image, threshold=threshold).compressed(),
-            label="Background",
-            **hist_kwargs,
-        )
+        ax.hist(background, label="Background", **hist_kwargs)
         ax.axvline(bg_value, label=f"{self.bg_percentile.value} percentile", color="k")
         ax.legend()
         ax.set(title="Intensity histogram", yscale="log")
@@ -250,14 +248,14 @@ percentile subtracted.
 
         ax = figure.subplot(0, 1, **share)
         ax.imshow(image - bg_value, cmap="plasma")
-        ax.set(title="Background corrected image")
+        ax.set(title="Background-corrected image")
 
         ax = figure.subplot(2, 1, **share)
         ax.imshow(smo.bg_probability(image), cmap="viridis")
         ax.set(title="Background probability")
 
 
-# All code below is copied from commit: 40d27ec538cf2ad4a69d37eb0f3518b459d6ddc0
+# All code below is copied from commit: c6d54531b9fedd0c3377ae3a926fa86efff25c2c
 # See https://github.com/maurosilber/SMO
 
 ############
@@ -386,6 +384,35 @@ class _SMO:
             size=self.size,
             threshold=self.smo_rv.ppf(threshold),
         )
+
+    def bg_corrected(
+        self,
+        image: np.ndarray | np.ma.MaskedArray,
+        *,
+        statistic: callable = np.median,
+        threshold: float = 0.05,
+    ) -> np.ma.MaskedArray:
+        """Returns a background-corrected image by subtracting a value.calculated
+        by applying statistic to the sample of background pixels.
+
+        Parameters
+        ----------
+        image : numpy.ndarray | numpy.ma.MaskedArray
+            Image. If there are saturated pixels, they should be masked.
+        statistic : callable
+            Computes the value to subtract. It receives as input a 1D array of
+            background pixels.
+        threshold : float
+            Threshold value [0, 1] for the SMO probability image.
+
+        Returns
+        -------
+        np.ma.MaskedArray
+            If the input has a mask, it is shared by the output.
+        """
+        image = self._check_image(image)
+        bg = self.bg_mask(image, threshold=threshold)
+        return image - statistic(bg.compressed())
 
     def bg_rv(
         self, image: np.ndarray | np.ma.MaskedArray, *, threshold: float = 0.05
