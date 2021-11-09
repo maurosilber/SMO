@@ -19,7 +19,7 @@ background_corrected_image = smo.bg_corrected(image)
 
 where we used a sample image from `scikit-image`.
 
-A notebook detailing this and other possible uses is available here: [smo/examples/usage.ipynb](smo/examples/usage.ipynb).
+A notebook explaining in more detail the meaning of the parameters and other possible uses for SMO is available here: [smo/examples/usage.ipynb](smo/examples/usage.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/maurosilber/SMO/blob/main/smo/examples/usage.ipynb).
 
 ## Installation
 
