@@ -9,7 +9,7 @@ import numpy as np
 from napari.types import ImageData, LabelsData
 from napari_plugin_engine import napari_hook_implementation
 
-from ..api import SMO
+from .. import SMO
 
 SizeSlider = Annotated[int, {"widget_type": "Slider", "value": 7, "min": 2, "max": 20}]
 SigmaSlider = Annotated[

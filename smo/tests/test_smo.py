@@ -1,6 +1,6 @@
 import numpy as np
 
-from smo.api import SMO
+from smo import SMO
 from smo.smo import rv_continuous
 
 

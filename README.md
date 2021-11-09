@@ -10,7 +10,7 @@ To obtain a background-corrected image, it is as straightforward as:
 
 ```python
 import skimage.data
-from smo.api import SMO
+from smo import SMO
 
 image = skimage.data.human_mitosis()
 smo = SMO(sigma=0, size=7, shape=(1024, 1024))
