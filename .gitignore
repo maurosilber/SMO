@@ -7,3 +7,5 @@ __pycache__/
 
 # Python instalation files
 *.egg*
+/build
+/dist
