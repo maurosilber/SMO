@@ -81,7 +81,9 @@ def smo(image, sigma, size):
     # Gradient norm
     grad_x.sqr()
     grad_y.sqr()
-    ImageCalculator.run(ImagePlus("grad_x", grad_x), ImagePlus("grad_y", grad_y), "add")
+    ImageCalculator().run(
+        "add", ImagePlus("grad_x", grad_x), ImagePlus("grad_y", grad_y)
+    )
     image = grad_x
     image.sqrt()
     return image
