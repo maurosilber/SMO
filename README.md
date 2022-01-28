@@ -1,3 +1,8 @@
+![PyPi](https://img.shields.io/pypi/pyversions/smo.svg)
+[![License](https://img.shields.io/github/license/maurosilber/smo)](https://opensource.org/licenses/MIT)
+[![PyPi](https://img.shields.io/pypi/v/smo.svg)](https://pypi.python.org/pypi/smo)
+[![Conda](https://img.shields.io/conda/pn/conda-forge/smo)](https://anaconda.org/conda-forge/smo)
+
 # SMO
 
 SMO is a Python package that implements the Silver Mountain Operator (SMO), which allows to recover an unbiased estimation of the background intensity distribution in a robust way.
@@ -33,6 +38,12 @@ It can be installed with `pip` from PyPI:
 
 ```
 pip install smo
+```
+
+or with `conda` from the conda-forge channel:
+
+```
+conda install -c conda-forge smo
 ```
 
 ## Plugins
