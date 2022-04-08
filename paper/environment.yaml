@@ -1,0 +1,16 @@
+name: smo-paper
+channels:
+  - conda-forge
+dependencies:
+  - cellpose
+  - matplotlib < 3.5
+  - numpy
+  - pandas
+  - scikit-image
+  - scipy
+  - seaborn
+  - tensorflow
+  - tqdm
+  - pip
+  - pip:
+    - stardist
