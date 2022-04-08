@@ -1,0 +1,8 @@
+# MATPLOTLIBRC FORMAT
+
+font.size: 8.0
+figure.figsize: 6, 2
+figure.dpi: 150
+image.interpolation: none
+image.origin: lower
+savefig.bbox: tight
