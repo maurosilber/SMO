@@ -1,0 +1,5 @@
+Background pixels are sampled uniformly exploiting their lack of local correlation.
+Sampling is uniform independently of the true background intensity distribution
+The result is both accurate and precise as demonstrated by simulations and experiments.
+The algorithm has a single parameter that does not require fine tuning.
+The method provides robust and unsupervised estimation of the background distribution.

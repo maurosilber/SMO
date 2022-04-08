@@ -1,0 +1,435 @@
+\documentclass[article]{jss}
+
+%% -- LaTeX packages and custom commands ---------------------------------------
+
+%% recommended packages
+\usepackage{orcidlink,thumbpdf,lmodern}
+
+%% extra packages and settings
+\usepackage{float}  % to fix position of supplementary figures
+\setkeys{Gin}{width=\linewidth}  % default width of figures
+\shortcites{Harris2020, Virtanen2020, skimage2014, Schindelin2012, Stirling2021, Habif2021, Squire2004, Vilar2009, Yen1995, Li1993, Gustafsdottir2013, Singh2015}
+
+%% new custom commands
+\newcommand{\class}[1]{`\code{#1}'}
+\newcommand{\fct}[1]{\code{#1()}}
+
+
+%% -- Article metainformation (author, title, ...) -----------------------------
+
+%% - \author{} with primary affiliation (and optionally ORCID link)
+%% - \Plainauthor{} without affiliations
+%% - Separate authors by \And or \AND (in \author) or by comma (in \Plainauthor).
+%% - \AND starts a new line, \And does not.
+\author{Mauro Silberberg~\orcidlink{0000-0002-2402-1100}\\Universidad de Buenos Aires
+   \And Hernán E. Grecco~\orcidlink{0000-0002-1165-4320}\\Universidad de Buenos Aires}
+\Plainauthor{Mauro Silberberg, Hernán E. Grecco}
+
+%% - \title{} in title case
+%% - \Plaintitle{} without LaTeX markup (if any)
+%% - \Shorttitle{} with LaTeX markup (if any), used as running title
+\title{Robust and Unbiased Estimation of the Background Distribution for Automated Quantitative Imaging}
+\Plaintitle{Robust and Unbiased Estimation of the Background Distribution for Automated Quantitative Imaging}
+\Shorttitle{Robust and Unbiased Estimation of the Background Distribution}
+
+%% - \Abstract{} almost as usual
+\Abstract{
+Quantitative analysis of high-throughput microscopy images requires robust automated algorithms.
+Background estimation is usually the first step and has an impact on all subsequent analysis, in particular for foreground segmentation and calculation of ratiometric quantities. Most methods recover only a single background value, such as the median. Those that aim to retrieve a background distribution by dividing the intensity histogram yield a biased estimation in images in non-trivial cases. In this work, we present the first method to recover an unbiased estimation of the background distribution directly from an image and without any additional input. Through a robust statistical test, our method leverages the lack of local spatial correlation in background pixels to select a subset of pixels that accurately represent the background distribution. This method is both fast and simple to implement, as it only uses standard mathematical operations and an averaging filter. Additionally, the only parameter, the size of the averaging filter, does not require fine-tuning. The obtained background distribution can be used to test for foreground membership of individual pixels, or to estimate confidence intervals in derived quantities. We expect that the concepts described in this work can help to develop a novel family of robust segmentation methods.
+}
+
+%% - \Keywords{} with LaTeX markup, at least one required
+%% - \Plainkeywords{} without LaTeX markup (if necessary)
+%% - Should be comma-separated and in sentence case.
+\Keywords{background, automated imaging, fluorescence microscopy, spatial correlation, robust statistics}
+%\Plainkeywords{JSS, style guide, comma-separated, not capitalized, R}
+
+%% - \Address{} of at least one author
+%% - May contain multiple affiliations for each author
+%%   (in extra lines, separated by \emph{and}\\).
+%% - May contain multiple authors for the same affiliation
+%%   (in the same first line, separated by comma).
+\Address{
+  Hernán E. Grecco\\
+  Department of Physics, FCEN,  University of Buenos Aires\\
+  \emph{and}\\
+  IFIBA-CONICET\\
+  C1428EHA, Buenos Aires, Argentina,\\
+  \emph{and}\\
+  Department of Systemic Cell Biology\\
+  Max Planck Institute of Molecular Physiology\\
+  44227, Dortmund, Germany\\
+  E-mail: \email{hgrecco@df.uba.ar}\\
+%  URL: \url{https://www.zeileis.org/}
+}
+
+\begin{document}
+
+
+%% -- Introduction -------------------------------------------------------------
+
+%% - In principle "as usual".
+%% - But should typically have some discussion of both _software_ and _methods_.
+%% - Use \proglang{}, \pkg{}, and \code{} markup throughout the manuscript.
+%% - If such markup is in (sub)section titles, a plain text version has to be
+%%   added as well.
+%% - All software mentioned should be properly \cite-d.
+%% - All abbreviations should be introduced.
+%% - Unless the expansions of abbreviations are proper names (like "Journal
+%%   of Statistical Software" above) they should be in sentence case (like
+%%   "generalized linear models" below).
+
+\section{Introduction} \label{sec:intro}
+
+	In the age of quantitative high-throughput microscopy, automated image analysis is not only a valuable tool, but a requirement to analyze the ever-increasing amount of collected data. In comparison to manual analysis, not only it provides speed and scalability, but also enables a repeatable objective quantification, which is independent of user bias and can be easily transferable \citep{Ljosa2009}.
+
+	An image analysis pipeline deals with transforming the photophysical signal, detected light, into biological observables of interest. While each pipeline is tailor-made for each particular application, they can be usually divided in three major steps: preprocessing, which involves whole image corrections such as illumination correction \citep{Singh2014}, background subtraction, and registration; segmentation and tracking, to identify objects of interest in the image and follow them through space and time; and measuring, to compute observables of interest over these objects, such as object shapes or mean intensities.
+	
+	In fluorescence microscopy, the objects of interest are labeled with fluorophores, but the collected light not only belongs to them, as there are contributions from other sources of signal, such as autofluorescence, out-of-focus fluorescence, stray light or detector noise, collectively referred to as background noise \citep{Waters2014}. Hence, It is important to estimate the background to account for its effect, as it has an impact on all subsequent analysis. Accurate knowledge of the background distribution can improve the segmentation, allowing the detection of dim objects and yielding better defined borders, which in turn impacts the tracking step. More importantly, it can have a major effect in the calculation of some photophysical quantities, as in ratiometric calcium imaging, in which inaccurate background subtraction leads to large errors in the range of 100\% \citep{Chen2006, Shkryl2020}. Additionally, any quantification of its precision would require an estimation of the background dispersion.
+	
+	Several methods have been developed to deal with the background. They can be broadly classified into intensity thresholding, such as Otsu’s method \citep{Otsu1979}, and mathematical morphology methods, such as rolling ball, which is one of the most popular methods to subtract the image background. Usually described as rolling a ball under the intensity surface, the rolling ball method consists of applying a grayscale erosion followed by a dilation with a spherical structuring element \citep{Sternberg1983}. But, these morphological methods depend on parameters whose optimal value is closely related to object sizes \citep{Kervrann2016}. Moreover, these methods do not estimate a background distribution, but only a single value at each pixel.
+	
+	On the other hand, intensity thresholding methods can obtain a background intensity distribution. Most standard methods, such as Otsu’s, assume that the foreground and background distributions can be separated in the image’s intensity histogram. Then, they provide an automated way to compute a threshold value from it, where all pixels below this threshold correspond to background. These methods tend to fail when the proportion of foreground and background is not balanced, or in low signal to noise scenarios \citep{Sezgin2004}. In the latter case, as foreground and background intensity distributions overlap, no threshold value can fully split them: some background pixels end up classified as foreground and vice versa. In turn, this yields a biased estimation for the background distribution.
+	
+	As the background is not always uniform, spatially adaptive intensity thresholding methods were developed that apply the same idea locally, over a user-defined window or kernel. Nevertheless, as these methods usually focus on the intensity histogram, they lose all spatial information in the process. In particular, the fact that objects are spatially structured, while the background is usually not.
+	
+	In intensity thresholding methods, background estimation is closely tied with segmentation, as the background is the leftover of finding the foreground objects. An alternative approach could be to use specialized segmentation methods, which could leverage spatial information in the intensity image. For instance, algorithms based on convolutional neural networks such as Stardist \citep{Schmidt2018} and Cellpose \citep{Stringer2021}. In particular, these two provide networks pre-trained on different phenotypes of cells, which lowers the barrier for entry, as no large manually annotated datasets and GPUs are required for training. Nevertheless, as these methods focus on learning cell-like characteristics, non-cell-like features will be classified as background, possibly yielding a biased intensity distribution.
+	
+	In this work, we demonstrate the first method to recover an unbiased estimation of the background distribution from an intensity image. Through a robust statistical test, it leverages the lack of local spatial correlation in background pixels to select a subset of pixels that accurately represent the background distribution. We show that it outperforms other methods in precision and accuracy. This novel method is both fast and simple to implement, as it only uses standard mathematical operations and an averaging filter. Additionally, its only parameter, the size of the averaging filter, does not require fine-tuning.
+
+
+%% -- Manuscript ---------------------------------------------------------------
+
+%% - In principle "as usual" again.
+%% - When using equations (e.g., {equation}, {eqnarray}, {align}, etc.
+%%   avoid empty lines before and after the equation (which would signal a new
+%%   paragraph.
+%% - When describing longer chunks of code that are _not_ meant for execution
+%%   (e.g., a function synopsis or list of arguments), the environment {Code}
+%%   is recommended. Alternatively, a plain {verbatim} can also be used.
+%%   (For executed code see the next section.)
+
+\section{Theory} \label{sec:theory}
+
+\subsection{Exploiting the lack of local correlation for background estimation}
+
+\begin{figure}[t!]
+\centering
+\includegraphics{../figures/figure1/figure1.pdf}
+\caption{\label{fig:figure1} Breakdown of the Silver Mountain Operator. A) Intensity image simulated as constant intensity followed by a linearly increasing region, plus standard normal noise. On the bottom row, a line profile along a row before (orange) and after (blue) adding noise. B and C) Gradient direction and its local average, respectively, color-coded by angle. The red square indicates the averaging kernel. D) Resulting SMO image, which is the length of the averaged gradient direction.}
+\end{figure}
+
+    To generate an estimation of the background intensity distribution, we exploit the lack of spatial structure in the background regions of fluorescence images. In particular, our method transforms an intensity image into values that measure local regularity in the direction of the intensity gradient, which we called the SMO image (fig. \ref{fig:figure1}). Then, assuming a structureless background, it performs a statistical test which selects only a subset of background pixels, but discards almost all the foreground regions. That subset of pixels forms an unbiased estimation of the background distribution. A key aspect of the method is that, being approximately non-parametric, a threshold value for the test can be selected independently of the intensity image, without any a priori knowledge of its background distribution.
+    
+	To demonstrate the fundamentals of the method, we synthetically generated an image consisting of a flat, constant intensity region followed by a linearly increasing intensity region, with added standard normal noise (fig. \ref{fig:figure1}A, see Methods).
+
+	For this image, we computed its gradient, a vector measuring of both the rate and direction of greater intensity increase, and then normalized by its length, which results in an image of unit vectors (fig. \ref{fig:figure1}B). Normalizing is what makes this method non-parametric, that is, independent of the underlying distribution. It can be thought of as a multidimensional extension of the Sign test, another non-parametric test, as the normalized gradient in 1D is either +1 or -1, if the intensity increases or decreases from one pixel to the next.
+
+	To measure the local variation in gradient direction, we used a local average to calculate a resultant vector for each pixel (red box, fig 1B, and red pixel, fig 1C). The size of the window must be chosen to be smaller than the typical lengths of the gradients.
+
+	Finally, each vector was reduced to a scalar value, the SMO value, by calculating its length (fig. \ref{fig:figure1}D). SMO values range from 1, when unit vectors in the averaging windows are aligned, to 0, when they are disordered. As expected from the simulation characteristics, the left and right sides of the SMO image have low and high values, respectively.
+
+	In the averaging step, high spatial frequency structures are averaged out and therefore are not detected. For example, a saw-like structure in which the derivative changes direction faster than the averaging kernel will yield a small SMO value and therefore indistinguishable from uncorrelated noise (supp. fig. \ref{fig:suppfig1}). Therefore, the averaging kernel size must be smaller than the foreground structures, while being large enough to produce a robust estimate (supp. fig. \ref{fig:suppfig2}).
+
+	However, since the normalization step is a nonlinear transformation, the whole process benefits from a previous smoothing step when the gradient is dominated by the high frequency components of the noise, concealing the signal. In these cases, the gradient direction in each pixel will be determined by the noise and therefore will be averaged out in the last step. In turn, this will overestimate the background region (supp. fig. \ref{fig:suppfig3}).
+
+\subsection{The SMO distribution is independent of the underlying background intensity distribution}
+
+\begin{figure}[t!]
+\centering
+\includegraphics{../figures/figure2/figure2.pdf}
+\caption{\label{fig:figure2} SMO distribution for uncorrelated noise images. A) Simulated random image sampled from a uniform distribution and its corresponding SMO image. B) (top) Joint and marginal distributions of intensity and SMO values. (bottom) Conditional distributions of intensity, corresponding to 0.1-quantile wide slices of SMO ranges as shown above. C) Intensity (top) and SMO (bottom) histograms for uncorrelated noise images generated from different intensity distributions.
+}
+\end{figure}
+
+	As this method is approximately non-parametric or distribution-free, no a priori knowledge of the underlying background distribution is needed. Additionally, it also implies that SMO values of uncorrelated noise are independent of their intensity values, which is the key for the unbiased estimation of the background distribution.
+
+	To demonstrate these properties, we generated uncorrelated noise-only images drawn from different intensity distributions. As no spatial correlation is present, the gradient fluctuates wildly in direction, yielding an SMO image with mostly low values (fig. \ref{fig:figure2}A).
+
+	The information contained in the SMO values is independent of its corresponding intensity values. Such independence can be seen by the agreement between conditional distributions (fig. \ref{fig:figure2}B, bottom), or by computing its copula from its joint distribution (supp. fig. \ref{fig:suppfig5}). Each of these conditional distributions corresponds to a 10 percentile-wide slice of SMO values, as depicted in the joint distribution (fig. \ref{fig:figure2}B, top), and yields the same estimation of the intensity distribution. Hence, any subset of SMO values can provide an unbiased estimation for the background intensity distribution.
+
+	To showcase that the method is robust against different intensity distributions, we repeated the same procedure for other distributions (fig 2C, top), which produced overlapping SMO distributions (fig 2C, bottom), and independent joint distributions (supp. fig. \ref{fig:suppfig5}).
+
+	In summary, the SMO distribution of a random, structureless image is independent of the underlying intensity distribution, and can be estimated by sampling from any distribution, for instance, a uniform distribution (see Methods, Threshold selection).
+
+\subsection{Intensity thresholding methods always yield a biased distribution}
+
+\begin{figure}[t!]
+\centering
+\includegraphics{../figures/figure3/figure3.pdf}
+\caption{\label{fig:figure3} Background estimation in a simulated image. A) Intensity image of a 2D gaussian structure over a constant zero background, plus standard normal noise. Below, the corresponding gradient direction and SMO images. B) Joint and marginal distribution for intensity and SMO, showing separately foreground (red) and background (green) distributions. C and D) Masks and recovered background distributions via intensity (orange) and SMO (blue) thresholding, respectively. Lines and arrows in B show the respective thresholds.
+}
+\end{figure}
+
+	Due to low photon counts, foreground and background intensity distributions overlap in fluorescence imaging. Hence, intensity thresholding methods are not well suited to the estimation of the background distribution, as it is fundamentally impossible to find a threshold value that splits them. In contrast, our method does not attempt to find the whole background pixels, but only a subset that accurately represents the background distribution.
+
+	To simulate this scenario, we generated a circular structure with a bell-shaped intensity profile over a constant background, and added gaussian noise (fig. \ref{fig:figure3}A, see Methods). As the noise amplitude is low compared to the intensity slope, the gradient presents a locally-defined direction in the structure, yielding high SMO values. Instead, low SMO values are assigned to background regions, where the noise level is high compared to the underlying intensity slope (zero), making the gradient direction fluctuate randomly from pixel to pixel.
+
+	The SMO also assigns low values in the center of the structure, which corresponds to a local maximum in intensity, where the gradient direction changes abruptly. Although the gradient direction has a regularity which distinguishes it from background, as they all point towards the maximum, the average vector is small and yields a low SMO value, which makes it indistinguishable from noise.
+
+	Knowing the ground truth, both background and foreground can be visualized separately in joint and marginal distributions (fig. \ref{fig:figure3}B). As they overlap, no single threshold can fully split them, either in intensity or SMO values. Any estimation of the background distribution from an intensity thresholding yields a biased distribution, with either a missing or a larger tail (fig. \ref{fig:figure3}C). Instead, as we have shown that any slice of SMO values samples fairly from a structureless background, we can recover an accurate estimation of the background distribution by using a sufficiently small SMO threshold such as to exclude as much foreground as possible (fig. \ref{fig:figure3}D). As we know a priori the distribution of SMO values for structureless backgrounds (fig. \ref{fig:figure2}C, bottom), we can select an appropriate threshold as a low percentile of that distribution, such as the 10th percentile.
+
+\section{Results} \label{sec:results}
+
+\subsection{The SMO matches a manually-recovered background in fluorescence microscopy images}
+
+\begin{figure}[t!]
+\centering
+\includegraphics{../figures/figure4/figure4.pdf}
+\caption{\label{fig:figure4} Background estimation in a fluorescence microscopy image. A) Intensity, gradient angle and SMO images. The orange rectangle corresponds to a manually selected background region used as ground truth. B) Grey: joint and marginal distributions of intensity and SMO values. Blue dashed and solid lines: distribution and 5th percentile of SMO values from a simulated structureless image. Green line: Otsu intensity threshold. C) Otsu and SMO and Rolling Ball background estimations. Grayscale regions correspond to excluded areas in the former two methods. D) Comparison of background distributions obtained from ground truth, Otsu, SMO and rolling ball. As cumulative (top) and density (bottom) distribution functions.
+}
+\end{figure}
+
+	To validate our method in real-world conditions, we used a fluorescence microscopy image of cells transfected with a cytosolic biosensor (fig. \ref{fig:figure4}A, see Methods). It shows a collection of cells with a broad range of intensities, spanning the whole dynamic range of the camera. The gradient angle image clearly shows a spatial regularity for each cell, even for very dim ones. In contrast, the background regions lack any spatial structure. Hence, background areas have low SMO values, while cells have mostly high SMO values.
+
+	As in the simulated example (fig. \ref{fig:figure3}A), cells present low SMO values in their centers, corresponding to local maxima in their intensities. These can also be appreciated as collections of pixels forming an upside-down L shape in the joint distribution of intensity and SMO values (fig. \ref{fig:figure4}B). Likewise, there is no separation between foreground and background in the intensity histogram (fig. \ref{fig:figure4}B, top).
+
+	Applying the Otsu intensity thresholding method \citep{Otsu1979}, it calculates a threshold so high (fig. \ref{fig:figure4}B, green line) as to exclude only the most bright cell (fig. \ref{fig:figure4}C, left). It yields a background distribution which starts to strongly deviate from the manually-selected ground truth (fig. \ref{fig:figure4}A, orange box) at around the 75th percentile (fig. \ref{fig:figure4}D, green and orange curves). As an additional comparison, we included the rolling ball method \citep{Sternberg1983}, which is the standard background correction method in ImageJ/FIJI \citep{Schindelin2012}. As it has some similarities to a local minimum filter, it produces a biased distribution in images where the background distribution spans a wide range of intensity values, such as in fluorescence microscopy images. The amount of bias depends on the chosen radius for the ball (supp. fig. \ref{fig:suppfig4}).
+
+	In contrast, thresholding the SMO image at the 5th percentile (fig. \ref{fig:figure4}B, blue line, see Methods for threshold selection) produces a mask that excludes all cells (fig. \ref{fig:figure4}C, middle). While the mask only includes 5\% of the background pixels, those constitute an unbiased estimation of the background distribution. In summary, SMO can estimate the background distribution as obtained from manual segmentation in an automatic and robust manner (fig. \ref{fig:figure4}D).
+
+\subsection{The SMO outperforms standard intensity thresholding methods}
+
+\begin{figure}[t!]
+\centering
+\includegraphics{../figures/figure5/figure5.pdf}
+\caption{\label{fig:figure5} Comparison of background intensity estimation methods for fluorescence  microscopy image with differing foreground to background area ratios. The cumulative distribution function (CDF) for different methods is compared against a manually-tuned segmentation (see Methods), shown in the inset. The title of the inset corresponds to the percentage of foreground pixels in the image.
+}
+\end{figure}
+
+    Intensity thresholding methods not only yield a biased intensity distribution, but are more sensitive to variations in the foreground intensity distribution. When the intensity histogram is not bimodal, standard intensity thresholding methods fail to produce a good threshold \citep{Kittler1985}. In particular, images from fluorescence microscopy have a strongly unimodal intensity distribution \citep{Baradez2004}.
+
+	To evaluate the performance of our method, we used fluorescence microscopy images from the Broad Bioimage Benchmark Collection \citep{Ljosa2012}. In particular, we used the BBBC025 dataset, which corresponds to U2OS cells treated with 315 unique shRNA sequences. Briefly, eight organelles and cell compartments were labeled: nucleus (Hoechst 33342), endoplasmic reticulum (concanavalin A/AlexaFluor488 conjugate), nucleoli and cytoplasmic RNA (SYTO14 green fluorescent nucleic acid stain), Golgi apparatus and plasma membrane (wheat germ agglutinin/AlexaFluor594 conjugate, WGA), F-actin (phalloidin/AlexaFluor594 conjugate) and mitochondria (MitoTracker Deep Red) \citep{Singh2015}. Image acquisition was performed on 5 different fluorescent channels, as described in \cite{Gustafsdottir2013}, which we identify according to their filename.
+
+	This dataset provides us with different foreground characteristics, which allows a fair comparison without assuming any particular foreground distribution. From the channel measuring the mitochondria, we selected three images displaying different foreground to background area ratios (fig. \ref{fig:figure5}). As no ground truth for the background distribution was available, we performed a manually supervised segmentation (fig. \ref{fig:figure5}, black curve, see Methods).
+
+	As for the algorithms to compare against, we chose some standard intensity thresholding methods which are available both in ImageJ/FIJI \citep{Schindelin2012} and scikit-image \citep{skimage2014}: \cite{Otsu1979}, \cite{Yen1995}, IsoData \citep{Ridler1978}, \cite{Li1993}, and Triangle \citep{Zack1977}. Additionally, we used two algorithms based on convolutional neural networks, Stardist \citep{Schmidt2018} and Cellpose \citep{Stringer2021}, dilating the resulting mask to improve the exclusion of foreground (see Image analysis for BBBC025 in Methods).
+
+	The quality of a blind background estimation method can be assessed by its performance across widely different conditions. For images with a low fraction of foreground pixels (fig. \ref{fig:figure5}, left), every method yields the same background distribution up to the 0.8 quantile, since the incidence of foreground pixels wrongly classified as background is not significant. As the fraction of foreground pixels increases (fig. \ref{fig:figure5}, center and right), the SMO method (blue curve) remains close to the manually selected ground truth. Instead, in the other methods, up to half of the background distribution actually corresponds to the foreground, leading to a biased median and mean values. Therefore, background correction, which is an essential step in all ratiometric quantifications, will yield a wrong result.
+
+\subsection{Testing robustness with a high-throughput dataset}
+
+\begin{figure}[t!]
+\centering
+\includegraphics{../figures/figure6/figure6.pdf}
+\caption{\label{fig:figure6} Comparison between methods for estimation of the median background for the dataset 25 of the Broad Bioimage Benchmark Collection. A) For each image, we estimated the background distribution (blue), computed its median (orange). Then, we built the distribution of median backgrounds for all images. B) On the top row, a typical image is shown for each channel. On the next row, a sample of image histograms for some images. The third row shows the cumulative distribution function (CDF) for the median backgrounds of all the dataset.
+}
+\end{figure}
+
+	To compare the robustness of our method against standard intensity thresholding methods, we used all 3456 fields of view of image set BBBC025, series 37983, from the Broad Bioimage Benchmark Collection \citep{Ljosa2012}.
+
+	As no ground truth for the background was available, and manually computing one was unfeasible, we needed to find a proxy to evaluate the performance of each method. Since all images in the same channel and acquisition settings have the same underlying background characteristics, we could use the variation of the estimated background between images from a single channel as a proxy for robustness. In particular, for each image in the dataset, we computed its background distribution and its median (fig. \ref{fig:figure6}A, blue histogram and orange line). Then, for each method, we built the distribution of median backgrounds (fig. \ref{fig:figure6}A, orange histogram), from where we interpret a smaller variation in median backgrounds as a more robust method.
+
+	In the Hoechst channel (fig. \ref{fig:figure6}B, first column), which marks the DNA, all methods behave properly, presenting a low variation, as indicated by the steep cumulative distribution function (CDF, fig 6B, bottom row). As the fluorescence is localized in the nucleus and has a low cell to cell variation, it gives rise to a bimodal distribution (fig. \ref{fig:figure6}B, middle row), for which the intensity thresholding methods perform well. While the variation is small, there is some bias for the intensity thresholding methods with respect to SMO, Stardist, and Cellpose, as depicted by the shift to the right in their curves. Most methods also perform well for the PhGolgi channel, which shows a bimodal distribution as well. The exceptions being Stardist and, more markedly, Yen’s method, which resulted in significantly larger median backgrounds for almost half of the dataset, as illustrated by its change of trend around the 0.6 quantile.
+
+	For the case of the Mito, ERSytoBleed, and ERSyto channels, which do not exhibit a marked bimodal distribution, the variation in median background is much more pronounced for the intensity thresholding methods. All methods deviate around the 0.6 and 0.8 quantiles (20\% to 40\% of the dataset), yielding higher estimates for the median background. A subsequent analysis shows that this deviation is highly correlated with the ratio of foreground to background areas in the images (supp. fig 7).
+
+
+%% -- Summary/conclusions/discussion -------------------------------------------
+
+\section{Summary and discussion} \label{sec:summary}
+
+\subsection{Overview}
+
+	We developed a statistical test that exploits the lack of correlation between neighboring pixels in the background to select a subset of pixels that accurately represent the background intensity distribution. Furthermore, being a non-parametric test, no a priori knowledge of the background distribution is needed.
+
+	We applied this method to a low signal-to-noise synthetic image, where we showed that intensity thresholding yields a biased distribution, while a range of SMO thresholds provide an unbiased estimation of the background distribution. Moreover, an appropriate threshold can be computed independently of the image. Also, we applied it to a fluorescence image of a cytosolic biosensor, where it obtained a more accurate background distribution than both Otsu’s method and the rolling ball method. For a large and diverse dataset, SMO was more robust than the other methods considered, as evidenced by measuring the variation in median background. We could not find any dataset that included a ground truth for the background, which can be an indication that proper background estimation has been overlooked. In most cases, background is just what remains after a foreground segmentation that targets specific objects. As described before, a biased background estimation will yield biased results in all intensity and ratiometric based measurements.
+
+	In contrast to methods that only estimate a single background value, our method obtains an accurate estimate of the background distribution. With this knowledge, it is possible to evaluate the bias and uncertainty in the calculation of biological observables, in particular in the case of ratiometric calculations \citep{Kalinin2007}.
+
+	While most methods focus on segmenting the foreground, our method aims to recover an estimate of the background distribution. It only requires that foreground structures present a gradient, i.e. that objects do not have flat intensity profiles. This is a common feature in fluorescence images of most cell types, particularly when there is not a sharp separation between foreground and background and, therefore, other methods that rely on finding borders fail. It relies on calculating a measure of the local average in gradient direction and has only one free parameter: the size of the averaging kernel. As long as it is smaller than the typical foreground structure, It doesn’t require fine-tuning, being robust across a wide range of values. Therefore, it is only necessary to tune it for the first image.
+
+\subsection{Perspective}
+
+	A possible improvement to the SMO could replace the local average of gradient directions with a filter that distinguishes local maxima of intensity from uncorrelated background. For instance, specialized tests for circular uniformity \citep{Pycke2010} might improve discrimination of intensity valleys, albeit with a slower run time. A simpler way is to combine SMO with other established methods. For example, morphological operations could be used to exclude both pixels from the ridge of cells and areas near their borders, which would improve the background estimation, removing the spurious tail to the right (supp. fig. \ref{fig:suppfig6}).
+
+	The method assumes that the background distribution is the same for each pixel, that is, independent of the position. In cases in which the assumption is not fulfilled, for instance, a non-homogeneous illumination, the method can be applied locally, as long as the slope of the background is smaller than changes due to noise. For example, a smooth surface could be fitted to the intensity values selected with the mask obtained via SMO thresholding.
+
+	Finally, the SMO image could be used as an input to segmentation algorithms, such as those relying on global thresholds, or machine learning based ones that use several input filters. Furthermore, using the estimation of the background distribution, the intensity image can be transformed to an image of probability of belonging or not to background.
+
+\section{Methods} \label{sec:methods}
+
+\begin{itemize}
+
+\item	\textbf{Software:} all image and figure generation was made with the Python scientific stack (
+	NumPy \citep{Harris2020},
+	SciPy \citep{Virtanen2020},
+	matplotlib \citep{Hunter2007},
+	scikit-image \citep{skimage2014}
+).
+Code to reproduce all figures
+and a Python implementation of SMO
+is available at \url{https://github.com/maurosilber/SMO}.
+We also provide plugins for
+napari \citep{napari2019},
+CellProfiler \citep{Stirling2021},
+and ImageJ/FIJI \citep{Schindelin2012}.
+It is also published in PyPI and conda-forge.
+
+\item	\textbf{Silver Mountain Operator (SMO) calculation:} starting from an intensity image $I$,
+	\begin{enumerate} 
+	\item (optionally) apply a smoothing filter
+	\item calculate the image gradient,
+		$\nabla I = (\Delta_x I, \Delta_y I)$,
+		where $\Delta_x I = I_{x+1, y} - I_{x-1, y}$
+		and   $\Delta_y I = I_{x, y+1} - I_{x, y-1}$
+	\item normalize each gradient vector with its length,
+		$\nabla I / || \nabla I ||$
+	\item apply a moving average to the normalized gradient
+	\item compute the length of each resulting average vector
+	\end{enumerate}
+
+	In particular, the Python implementation of SMO uses: gaussian (step 1) and uniform (step 4) filters from SciPy’s ndimage module; calculates the gradient (step 2) with NumPy’s gradient function; and uses the euclidean norm for vector lengths in steps 3 and 5.
+
+\item	\textbf{Threshold selection for SMO:} generate an image sampled from a uniform distribution, calculate its SMO image, and compute a desired percentile. For instance, the 5th percentile to include only 5% of the background. The SMO calculation for the randomly sampled image has to use the same smoothing and averaging filter as the ones used for the target intensity image. Also, it is important to exclude saturated intensity pixels from the resulting SMO mask.
+
+\item	\textbf{Simulated structure:} a 2D gaussian profile with a peak amplitude of 10 and 100 pixels of radius over a zero background, plus standard normal noise. The total image size was 200x200 pixels.
+
+\item	\textbf{Sample preparation and image acquisition:} samples correspond to HeLa cells transfected with CASPAM, a cytosolic biosensor described in \cite{Habif2021}. Imaging was performed by means of a custom built setup as described in \cite{Squire2004, Vilar2009}. Briefly, it was composed of an Olympus IX81 inverted microscope (Olympus, Germany) equipped with a MT20 illumination system, an Orca CCD camera (Hamamatsu Photonics, Japan), and a 20X 0.7 NA air objective. The CellR software (Olympus, Germany) was used to acquire images.
+
+\item	\textbf{Image analysis for BBBC025:} as intensity thresholding methods assume a spatially homogeneous background, we reduced the distortion in the dataset due to the non-uniform illumination by cropping the images from a size of 1080x1080 pixels to the middle 432x432 pixels region. For each of the intensity thresholding methods: \cite{Otsu1979}, \cite{Yen1995}, IsoData \citep{Ridler1978}, \citep{Li1993}, and Triangle \citep{Zack1977}, the background for each image was estimated as all pixels below the computed threshold. For the SMO method, an averaging window of 7 pixels was chosen, with no previous smoothing. The threshold level was set as the 5th percentile as described before in Threshold selection for SMO. For Stardist \citep{Schmidt2018} and Cellpose \citep{Stringer2021}, the pretrained models for 2D cytoplasm were used (``2D\_paper\_dsb2018'' and ``cyto'', respectively). The resulting mask was dilated with a disk of 10 pixels to improve the exclusion of cell borders. The background was selected from the inverse mask.
+
+\end{itemize}
+
+\section*{Acknowledgments}
+
+\subsection{Funding}
+
+	This work was supported by the following grants: PICT 2014-3658; PICT 2013-1301; Max Planck Gesellschaft Partner Group.
+
+
+%% -- Bibliography -------------------------------------------------------------
+%% - References need to be provided in a .bib BibTeX database.
+%% - All references should be made with \cite, \citet, \citep, \citealp etc.
+%%   (and never hard-coded). See the FAQ for details.
+%% - JSS-specific markup (\proglang, \pkg, \code) should be used in the .bib.
+%% - Titles in the .bib should be in title case.
+%% - DOIs should be included where available.
+
+\bibliography{refs}
+
+%% -- Appendix (if any) --------------------------------------------------------
+%% - After the bibliography with page break.
+%% - With proper section titles and _not_ just "Appendix".
+
+\newpage
+
+\begin{appendix}
+
+\section{Supplementary Material} \label{sec:supplementary}
+
+\subsection{High-frequency saw-like structure yields small SMO values}
+
+As the derivative changes direction faster than the averaging kernel, it yields a null SMO value and therefore indistinguishable from uncorrelated noise.
+	
+\begin{figure}[H]
+	\centering
+	\includegraphics{../figures/suppfig1/suppfig1.pdf}
+	\caption{\label{fig:suppfig1} Breakdown of the SIlver Mountain Operator. A) Intensity image simulated as constant intensity followed by a saw-like region, plus standard normal noise. On the bottom row, a line profile along a row before (orange) and after (blue) adding noise. B and C) Gradient direction and its local average, respectively, color-coded by angle. The red square indicates the averaging kernel. D) Resulting SMO image, which is the length of the average gradient.
+	}
+\end{figure}
+
+\newpage
+
+\subsection{Robustness of for different averaging kernel sizes}
+
+The choice of averaging kernel size does not have a great impact on the recovered background distribution, as long as it is smaller than the foreground structures, since they would be averaged out. Nevertheless, larger kernels do produce a slightly better estimate, as more of the neighbourhood is considered to decide if a pixel is part of the background or not.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics{../figures/suppfig2/suppfig2.pdf}
+	\caption{\label{fig:suppfig2} The SMO is robust to changes in averaging kernel size. Top row: SMO images for different kernel sizes, which are shown to scale as red squares. Bottom row: background distributions estimated for each kernel size, compared to a manually selected region as ground truth.
+	}
+\end{figure}
+
+\newpage
+
+\subsection{A previous smoothing filter improves the performance of SMO}
+
+The SMO benefits from applying a previous smoothing filter to the intensity image, as it can better distinguish the intensity gradient from noise. Note that the thresholded mask obtained from the SMO image is applied to the original intensity image, and not the smoothed one.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics{../figures/suppfig3/suppfig3.pdf}
+	\caption{\label{fig:suppfig3} (A) Intensity image simulated as a constant region (background) followed by a linearly increasing region (foreground), plus standard normal noise. (B) Top row: SMO images after applying a gaussian filter of size . Bottom row: background distributions estimated, compared to the ground truth (left side of the image).
+	}
+\end{figure}
+
+\newpage
+
+\subsection{The Rolling Ball method recovers a biased background distribution}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics{../figures/suppfig4/suppfig4.pdf}
+	\caption{\label{fig:suppfig4} The rolling ball method applied to the intensity image of figure 5. Top row: background estimation different radii r. Bottom row: background distributions estimated, compared to a manually selected region as ground truth.
+	}
+\end{figure}
+
+\newpage
+
+\subsection{SMO values are independent from intensity values for all distributions}
+
+A uniform copula shows independence between intensity and SMO values for the different noise distributions.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics{../figures/suppfig5/suppfig5.pdf}
+	\caption{\label{fig:suppfig5} Copulas of the joint distribution of intensity and SMO values for different noise distributions.
+	}
+\end{figure}
+
+\newpage
+
+\subsection{Refinement of the SMO mask with morphological operations}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics{../figures/suppfig6/suppfig6.pdf}
+	\caption{\label{fig:suppfig6} Refining the SMO mask with morphological operations improves the background estimation. (A) Top: Original SMO mask. Bottom: refined with morphological operations to exclude points near to cell borders. (B) Background distributions estimated, compared to a manually selected region as ground truth.
+	}
+\end{figure}
+
+\newpage
+
+\subsection{Correlation between background to foreground area ratio and method failure in BBBC025}
+
+When the number of background pixels is small compared to the foreground ones, all methods fail, estimating a higher value for the median background. While there is not much difference in the Hoechst channel, in the Mito, ERSyto and ERSytoBleed, all methods show a lower breaking point than the SMO method.
+
+As we had no segmentation available as a ground truth, we used a manually selected threshold per channel to segment into foreground and background and calculate area ratio. Hence, it is not the true ratio, but a proxy of it. The chosen thresholds were:
+    
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|r|}
+\hline
+Channel     & Threshold \\
+\hline
+Hoechst     & 540       \\ 
+PhGolgi     & 3500      \\ 
+Mito        & 1300      \\ 
+ERSyto      & 1100      \\ 
+ERSytoBleed & 2000      \\
+\hline                       
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics{../figures/suppfig7/suppfig7.pdf}
+	\caption{\label{fig:suppfig7} Correlation between foreground-to-background area ratio and bias in median background intensity. The vertical dashed line marks the breaking point for the SMO method.
+	}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics{../figures/suppfig8/suppfig8.pdf}
+	\caption{\label{fig:suppfig8} Sample images of low and high density of cells. Top: sample images selected such that all methods reported a median value between the 10 and 20 percentile of the median background distribution. Bottom: all methods reported median background greater than the manually-selected thresholds.
+	}
+\end{figure}
+
+\end{appendix}
+
+%% -----------------------------------------------------------------------------
+
+
+\end{document}
