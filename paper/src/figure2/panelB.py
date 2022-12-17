@@ -34,8 +34,8 @@ def panelB(axes, ax_bottom, pipeline):
     }
 
     axes.center.set(**kwargs)
-    axes.top.set(xlim=kwargs["xlim"], yticks=())
-    axes.right.set(ylim=kwargs["ylim"], xticks=())
+    axes.top.set(xlim=kwargs["xlim"], ylabel="PDF")
+    axes.right.set(ylim=kwargs["ylim"], xlabel="PDF")
     ax_bottom.set(ylim=(0, 1.5))
     ax_bottom.legend(
         title="SMO\nquantile",
