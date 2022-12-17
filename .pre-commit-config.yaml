@@ -1,14 +1,21 @@
 repos:
 -   repo: https://github.com/ambv/black
-    rev: 21.8b0
+    rev: 22.12.0
     hooks:
     - id: black
 -   repo: https://github.com/timothycrosley/isort
-    rev: '5.9.3'
+    rev: 'v5.11.3'
     hooks:
     -   id: isort
         additional_dependencies: ['toml']
--   repo: https://gitlab.com/pycqa/flake8
-    rev: '3.9.2'
+-   repo: https://github.com/pycqa/flake8
+    rev: '6.0.0'
     hooks:
     - id: flake8
+-   repo: https://github.com/mwouts/jupytext
+    rev: v1.14.4
+    hooks:
+    - id: jupytext
+      args: [--sync, --pipe, black]
+      additional_dependencies:
+        - black==20.8b0
