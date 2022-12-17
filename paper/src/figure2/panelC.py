@@ -16,8 +16,8 @@ def dist_histograms(axes, pipelines: common.SMOPipeline):
         )
         step_hist(axes[1], pipeline.smo.flat, bins=np.linspace(0, 1, 100), label=name)
 
-    axes[0].set(xlabel="Intensity", xticks=(-3, 0, 3, 6), yticks=())
-    axes[1].set(xlabel="SMO", yticks=())
+    axes[0].set(xlabel="Intensity", ylabel="PDF", xticks=(-3, 0, 3, 6))
+    axes[1].set(xlabel="SMO", ylabel="PDF")
 
 
 if __name__ == "__main__":
