@@ -26,7 +26,7 @@ A, B = fig.add_gridspec(1, 2, width_ratios=(1, 6), wspace=0.5)
 
 axes_image, axes_profile = A.subgridspec(2, 1, hspace=0.5).subplots()
 axes_image.imshow(image)
-axes_profile.plot(image[0])
+axes_profile.plot(image[0], linewidth=0.5)
 axes_profile.plot(profile)
 
 
@@ -71,7 +71,13 @@ for ax, (size, color) in zip(axes_images, sizes.items()):
 
     for ax_h, hist_kw in axes_hists.items():
         ax_h.hist(
-            bg_dist, bins=bins, density=True, histtype="step", color=color, **hist_kw
+            bg_dist,
+            bins=bins,
+            density=True,
+            histtype="step",
+            linewidth=0.5,
+            color=color,
+            **hist_kw,
         )
 
     ax.set(xticks=(), yticks=(), title=f"$\\sigma = {size}$")
