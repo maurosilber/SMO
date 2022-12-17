@@ -129,7 +129,7 @@ class SMO:
         statistic: callable = np.median,
         threshold: float = 0.05,
     ) -> np.ma.MaskedArray:
-        """Returns a background-corrected image by subtracting a value.calculated
+        """Returns a background-corrected image by subtracting a value calculated
         by applying statistic to the sample of background pixels.
 
         Parameters
@@ -146,6 +146,11 @@ class SMO:
         -------
         np.ma.MaskedArray
             If the input has a mask, it is shared by the output.
+
+        Notes
+        -----
+        The resulting image might contain negative values in the background regions,
+        but the background should be centered at 0.
         """
         image = self._check_image(image)
         bg = self.bg_mask(image, threshold=threshold)

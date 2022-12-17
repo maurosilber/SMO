@@ -29,6 +29,10 @@ background_corrected_image = smo.bg_corrected(image)
 ```
 
 where we used a sample image from `scikit-image`.
+By default,
+the background correction subtracts the median value of the background distribution.
+Note that the background regions will end up with negative values,
+but with a median value of 0.
 
 A notebook explaining in more detail the meaning of the parameters and other possible uses for SMO is available here: [smo/examples/usage.ipynb](smo/examples/usage.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/maurosilber/SMO/blob/main/smo/examples/usage.ipynb).
 

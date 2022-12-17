@@ -44,7 +44,9 @@ convenience, a setting to mask them is provided as part of this module.
 
 What do I get as output?
 ^^^^^^^^^^^^^^^^^^^^^^^^
-The default output is a the input image with the median background subtracted.
+The default output is the input image with the median background subtracted.
+Note that it might contain negative values in the background regions,
+but the median background should be centered at 0.
 
 Other useful outputs are:
 - Background probability: could be used as input for segmentation algorithms.
@@ -489,7 +491,7 @@ def _euclidean_norm(x: list[np.ndarray]) -> np.ndarray:
     if len(x) == 1:
         return np.abs(x[0])
 
-    return np.sqrt(sum(xi ** 2 for xi in x))
+    return np.sqrt(sum(xi**2 for xi in x))
 
 
 def _filter(filter: callable, input: np.ma.MaskedArray, **kwargs) -> np.ma.MaskedArray:

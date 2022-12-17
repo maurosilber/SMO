@@ -4,7 +4,7 @@
 # @Float (label="Smoothing (sigma)", description="Size of the gaussian smoothing kernel.", style="slider,format:0.0", min=0, max=10, stepSize=0.1, value=0, persist=true) sigma  # noqa: E501
 # @Integer (label="Averaging window", description="Size of the gradient direction averaging kernel.", style="slider", min=3, max=21, stepSize=2, value=7, persist=true) size  # noqa: E501
 # @Float (label="SMO threshold", description="<html>Percentage of background pixels to include in the background distribution estimation.<br>A higher threshold leads to more foreground pixels being (incorrectly) included.</html>", style="slider,format:0.0", min=0, max=100, stepSize=1, value=5, persist=true) threshold  # noqa: E501
-# @Float (label="Background percentile", description="Subtract this percentile of the background distribution to the input image.", style="slider,format:0.0", min=0, max=100, stepSize=1, value=50, persist=true) percentile  # noqa: E501
+# @Float (label="Background percentile", description="<html>Subtract this percentile of the background distribution to the input image.<br>Note that the resulting image will contain negative values in some background regions,<br>but the background will be centered at 0.</html>", style="slider,format:0.0", min=0, max=100, stepSize=1, value=50, persist=true) percentile  # noqa: E501
 # @Boolean (label="Add info to log", value=false) log
 # @Boolean (label="Show histogram", description="Show histogram of the background distribution.", value=false) show_histogram  # noqa: E501
 # @output ImagePlus output
@@ -69,13 +69,13 @@ def smo(image, sigma, size):
         for y in range(image.getHeight()):
             xv = grad_x.getf(x, y)
             yv = grad_y.getf(x, y)
-            norm = (xv ** 2 + yv ** 2) ** 0.5
+            norm = (xv**2 + yv**2) ** 0.5
             if norm == 0:
                 continue
             grad_x.setf(x, y, xv / norm)
             grad_y.setf(x, y, yv / norm)
     # Average gradient direction
-    kernel = [1.0 / size ** 2 for _ in range(size ** 2)]
+    kernel = [1.0 / size**2 for _ in range(size**2)]
     grad_x.convolve(kernel, size, size)
     grad_y.convolve(kernel, size, size)
     # Gradient norm
