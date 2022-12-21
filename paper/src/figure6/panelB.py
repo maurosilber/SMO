@@ -45,10 +45,7 @@ def panelB(fig, sps, **gridspec_kw):
 
         for channel, df_channel in df_low.groupby("channel"):
             ax = axes_images[channel_order.index(channel)]
-            dir = next(image_directory.rglob(f"*_{channel}"))
-            file = next(dir.glob("*.tif"))
-            plot_image(ax, file)
-            # plot_image(ax, df_channel.iloc[0].file)
+            plot_image(ax, df_channel.iloc[0].file)
             ax.set(title=channel)
 
         for ax_base, *rest in zip(axes_images, axes_hists, axes_cdfs):
