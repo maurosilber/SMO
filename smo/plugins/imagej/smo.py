@@ -2,7 +2,7 @@
 # @ImagePlus (label="Input") image
 # @String (label="Output", choices={"Background-corrected image", "SMO image", "Background mask"}, style="radioButtonVertical") output_choice  # noqa: E501
 # @Float (label="Smoothing (sigma)", description="Size of the gaussian smoothing kernel.", style="slider,format:0.0", min=0, max=10, stepSize=0.1, value=0, persist=true) sigma  # noqa: E501
-# @Integer (label="Averaging window", description="Size of the gradient direction averaging kernel.", style="slider", min=3, max=21, stepSize=2, value=7, persist=true) size  # noqa: E501
+# @Integer (label="Averaging window", description="<html>Size of the gradient direction averaging kernel<br>Must be smaller than the foreground features.</html>.", style="slider", min=3, max=21, stepSize=2, value=7, persist=true) size  # noqa: E501
 # @Float (label="SMO threshold", description="<html>Percentage of background pixels to include in the background distribution estimation.<br>A higher threshold leads to more foreground pixels being (incorrectly) included.</html>", style="slider,format:0.0", min=0, max=100, stepSize=1, value=5, persist=true) threshold  # noqa: E501
 # @Float (label="Background percentile", description="<html>Subtract this percentile of the background distribution to the input image.<br>Note that the resulting image will contain negative values in some background regions,<br>but the background will be centered at 0.</html>", style="slider,format:0.0", min=0, max=100, stepSize=1, value=50, persist=true) percentile  # noqa: E501
 # @Boolean (label="Add info to log", value=false) log
