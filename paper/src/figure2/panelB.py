@@ -4,7 +4,7 @@ import numpy as np
 from .. import common
 
 
-def panelB(axes, ax_bottom, pipeline):
+def panelB(axes: common.MarginalAxes, ax_bottom, pipeline):
     x, y = pipeline.intensity.ravel(), pipeline.smo.ravel()
     bins = np.linspace(0, 1, 200), np.linspace(0, 1, 200)
 
@@ -28,9 +28,9 @@ def panelB(axes, ax_bottom, pipeline):
 
     kwargs = {
         "xlim": (0, 1),
-        "ylim": (0, 0.3),
+        "ylim": (0, 0.45),
         "xticks": (0, 1),
-        "yticks": (0, 0.3),
+        "yticks": (0, 0.2, 0.4),
     }
 
     axes.center.set(**kwargs)
@@ -54,7 +54,7 @@ def hist2d(axes: common.MarginalAxes, x, y, bins):
         y, bins=bins[1], color=color, orientation="horizontal", rasterized=True
     )
 
-    axes.center.set(xlabel="Intensity value", ylabel="SMO value", yticks=(0, 1))
+    axes.center.set(xlabel="Intensity value", ylabel="SMO value")
     return hist2d, xhist, yhist
 
 
@@ -65,7 +65,14 @@ def conditional_dists(
 
     a, m, b = np.quantile(y, (q - width / 2, q, q + width / 2))
     mask = (a <= y) & (y < b)
-    ax.hist(x[mask], bins=xbins, density=True, histtype="step", label=f"{q:.1f}")
+    ax.hist(
+        x[mask],
+        bins=xbins,
+        density=True,
+        histtype="step",
+        label=f"{q:.1f}",
+        linewidth=0.5,
+    )
     ax.set(xlabel="Intensity value", ylabel="PDF", yticks=(0, 1.0), ylim=(0, 1.05))
 
     axes.center.annotate(
