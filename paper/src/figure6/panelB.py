@@ -24,7 +24,7 @@ def plot_histogram(ax, channel, df_channel, *, nbins):
             ax, y, nbins=nbins, color="k", alpha=0.1, rasterized=True
         )
 
-    ax.set(xscale="log", yscale="log", xlim=(3e2, 8e4))
+    ax.set(xscale="log", yscale="log", xlim=(3e2, 8e4), yticks=(1e-2, 1e-4, 1e-6, 1e-8))
     ax.set_xlabel("Intensity", fontsize="x-small")
 
 
@@ -67,7 +67,7 @@ def panelB(fig, sps, **gridspec_kw):
             ax.set(xlim=xlim, xticks=xticks)
             ax.set_xlabel("Median background", fontsize="x-small")
 
-        axes_hists[0].set(ylabel="Density")
+        axes_hists[0].set(ylabel="PDF")
         axes_cdfs[0].set(ylabel="CDF")
 
         axes_cdfs[-1].legend(
@@ -85,7 +85,7 @@ xlims = {
     "ERSytoBleed": ((900, 3100), [1000, 2000, 3000]),
     "Mito": ((1100, 1900), [1250, 1500, 1750]),
     "PhGolgi": ((2400, 7600), [2500, 5000, 7500]),
-    "Hoechst": ((495, 535), [500, 530]),
+    "Hoechst": ((495, 535), [500, 515, 530]),
 }
 
 

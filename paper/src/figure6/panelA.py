@@ -25,6 +25,8 @@ class StackedAxes:
         self.axes = list(
             self._yield_axes(fig, number, ratio, bbox, transparent=transparent)
         )
+        for ax in self.axes[1:]:
+            ax.set(xticks=(), yticks=())
 
     def __iter__(self):
         yield from self.axes
@@ -74,7 +76,6 @@ def plot_histogram(ax, image, bins):
     median = np.median(bg)
     ix = np.searchsorted(bins, median)
     ax.vlines(median, 0, counts[ix], color="C1")
-    ax.set(xticks=(), yticks=())
 
 
 def panelA(fig, sps):
@@ -98,12 +99,19 @@ def panelA(fig, sps):
         image = imread(file)
         plot_image(ax_im, image)
         plot_histogram(ax_bg, image, bins=np.arange(600, 1000, 10))
+    axes_bg_hist.axes[0].set(
+        xlabel="Intensity", ylabel="PDF", yticks=(), xticks=(500, 750, 1000)
+    )
+    axes_bg_hist.axes[0].tick_params(axis="both", which="major", labelsize=5)
+    axes_bg_hist.axes[0].tick_params(axis="both", which="minor", labelsize=4)
 
     # Histogram of medians
     ax_hist = fig.add_axes(gs[-1].get_position(fig))
-    bins = np.arange(*smo_medians.quantile((0, 0.95)), 10)
-    ax_hist.hist(smo_medians, bins=bins, color="C1")
-    ax_hist.set(title="Median\nbackground", xticks=(), yticks=())
+    bins = np.arange(*smo_medians.quantile((0, 0.95)), 15)
+    ax_hist.hist(smo_medians, bins=bins, color="C1", density=True)
+    ax_hist.set(title="Median\nbackground", xlabel="Intensity", ylabel="PDF", yticks=())
+    ax_hist.tick_params(axis="both", which="major", labelsize=5)
+    ax_hist.tick_params(axis="both", which="minor", labelsize=4)
 
     return (*axes_images, *axes_bg_hist, ax_hist)
 
