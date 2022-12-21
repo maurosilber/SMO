@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from ..BBBC025 import load_summary, method_order
 from ..BBBC025.segmentation import manual_thresholds
 
@@ -14,5 +16,6 @@ def all_extreme(dg):
 
 
 df = load_summary()
+df_histograms = df[df.file.apply(Path.exists)]
 df_low = df.groupby("channel", group_keys=False).apply(all_low)
 df_extreme = load_summary().groupby("channel", group_keys=False).apply(all_extreme)
