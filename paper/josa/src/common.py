@@ -36,7 +36,7 @@ def generate_image(*, amplitude, background=0, pad=12, width=0.5):
     # Coordinates
     x = np.linspace(-1, 1, 100)
     X, Y = np.meshgrid(x, x)
-    R2 = X ** 2 + Y ** 2
+    R2 = X**2 + Y**2
 
     mask = R2 > x[-1] ** 2
     image = np.where(mask, background, amplitude * np.exp(-R2 / width))

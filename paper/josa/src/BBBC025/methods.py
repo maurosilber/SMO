@@ -91,7 +91,7 @@ def get_smo():
     smo_threshold = smo_rv((1024, 1024), sigma=sigma, size=size).ppf(0.05)
 
     def smo(image):
-        saturation = 2 ** 16
+        saturation = 2**16
         masked_image = np.ma.masked_greater_equal(image, saturation - 8)
         return smo_mask(masked_image, sigma=sigma, size=size, threshold=smo_threshold)
 
