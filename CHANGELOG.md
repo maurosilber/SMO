@@ -1,5 +1,9 @@
 # Changelog
 
+## 2,0,1
+
+- Add Python 3.11 support
+
 ## 2.0.0
 
 - Added ImageJ plugin
