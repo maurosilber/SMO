@@ -30,35 +30,18 @@ authors:
     orcid: 'https://orcid.org/0000-0002-1165-4320'
 identifiers:
   - type: doi
-    value: 10.1101/2021.11.09.467975
-    description: BioRxiv pre-print
+    value: 10.1364/JOSAA.477468
 abstract: >-
-  Quantitative analysis of high-throughput microscopy
-  images requires robust automated algorithms.
-  Background estimation is usually the first step and
-  has an impact on all subsequent analysis, in
-  particular for foreground detection and calculation
-  of ratiometric quantities. Most methods recover
-  only a single background value, such as the median.
-  Those that aim to retrieve a background
-  distribution by dividing the intensity histogram
-  yield a biased estimation in images in non-trivial
-  cases. In this work, we present the first method to
-  recover an unbiased estimation of the background
-  distribution directly from an image and without any
-  additional input. Through a robust statistical
-  test, our method leverages the lack of local
-  spatial correlation in background pixels to select
-  a subset of pixels that accurately represent the
-  background distribution. This method is both fast
-  and simple to implement, as it only uses standard
-  mathematical operations and an averaging filter.
-  Additionally, the only parameter, the size of the
-  averaging filter, does not require fine tuning. The
-  obtained background distribution can be used to
-  test for foreground membership of individual
-  pixels, or to estimate confidence intervals in
-  derived quantities. We expect that the concepts
-  described in this work can help to develop a novel
-  family of robust segmentation methods.
+  Background estimation is the first step in quantitative analysis of images.
+  It has an impact on all subsequent analyses,
+  in particular for segmentation and calculation of ratiometric quantities.
+  Most methods recover only a single value such as the median
+  or yield a biased estimation in non-trivial cases.
+  We introduce,
+  to our knowledge,
+  the first method to recover an unbiased estimation of background distribution.
+  It leverages the lack of local spatial correlation in background pixels
+  to robustly select a subset that accurately represents the background.
+  The resulting background distribution can be used to test for foreground membership of individual pixels
+  or estimate confidence intervals in derived quantities.
 license: MIT
