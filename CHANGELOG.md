@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.2
+
+- Fix relative link in README
+
 ## 2,0,1
 
 - Add Python 3.11 support
