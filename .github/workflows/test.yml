@@ -20,6 +20,6 @@ jobs:
 
       - name: Install dependencies
         run: pip install .[dev]
-      
+
       - name: Run tests
         run: pytest

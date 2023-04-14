@@ -14,7 +14,7 @@ def _euclidean_norm(x: list[np.ndarray]) -> np.ndarray:
     if len(x) == 1:
         return np.abs(x[0])
 
-    return np.sqrt(sum(xi ** 2 for xi in x))
+    return np.sqrt(sum(xi**2 for xi in x))
 
 
 def _filter(filter: callable, input: np.ma.MaskedArray, **kwargs) -> np.ma.MaskedArray:

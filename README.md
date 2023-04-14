@@ -51,6 +51,7 @@ conda install -c conda-forge smo
 ```
 
 ## Plugins
+
 ### Napari
 
 A [napari](https://napari.org) plugin is available.
@@ -95,7 +96,7 @@ Note: the ImageJ plugin does not check that saturated pixels are properly exclud
 
 ## Development
 
-Code style is enforced via pre-commit hooks. To set up a development environment, clone the repository, optionally create a virtual environment, install the [dev] extras and the pre-commit hooks:
+Code style is enforced via pre-commit hooks. To set up a development environment, clone the repository, optionally create a virtual environment, install the `[dev]` extras and the pre-commit hooks:
 
 ```
 git clone https://github.com/maurosilber/SMO
