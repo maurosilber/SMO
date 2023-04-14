@@ -1,21 +1,30 @@
 repos:
--   repo: https://github.com/ambv/black
-    rev: 22.12.0
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+    -   id: check-yaml
+    -   id: end-of-file-fixer
+    -   id: trailing-whitespace
+-   repo: https://github.com/psf/black
+    rev: 23.3.0
     hooks:
     - id: black
--   repo: https://github.com/timothycrosley/isort
-    rev: 'v5.11.3'
+-   repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: 'v0.0.261'
     hooks:
-    -   id: isort
-        additional_dependencies: ['toml']
--   repo: https://github.com/pycqa/flake8
-    rev: '6.0.0'
+    - id: ruff
+      args: ["--fix"]
+-   repo: https://github.com/executablebooks/mdformat
+    rev: 0.7.16
     hooks:
-    - id: flake8
+    - id: mdformat
+      additional_dependencies:
+      - mdformat-gfm  # GitHub-flavored Markdown
+      - mdformat-black
 -   repo: https://github.com/mwouts/jupytext
-    rev: v1.14.4
+    rev: v1.14.5
     hooks:
     - id: jupytext
       args: [--sync, --pipe, black]
       additional_dependencies:
-        - black==20.8b0
+        - black==23.3.0
