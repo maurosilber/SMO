@@ -11,9 +11,14 @@ We provide an easy to use Python package and plugins for some of the major image
 
 ## Citation
 
-To learn more about the theory behind SMO, you can read the [pre-print in BioRxiv](https://doi.org/10.1101/2021.11.09.467975).
+To learn more about the theory behind SMO,
+you can read:
 
-If you use this software, please cite that pre-print.
+- the [peer-reviewed article](https://doi.org/10.1364/JOSAA.477468) in the Journal of the Optical Society of America,
+- the [pre-print](https://doi.org/10.1101/2021.11.09.467975) in BioRxiv.
+
+If you use this software,
+please cite the peer-reviewed article.
 
 ## Usage
 
