@@ -1,7 +1,7 @@
 ![PyPi](https://img.shields.io/pypi/pyversions/smo.svg)
 [![License](https://img.shields.io/github/license/maurosilber/smo)](https://opensource.org/licenses/MIT)
 [![PyPi](https://img.shields.io/pypi/v/smo.svg)](https://pypi.python.org/pypi/smo)
-[![Conda](https://img.shields.io/conda/pn/conda-forge/smo)](https://anaconda.org/conda-forge/smo)
+[![Conda](https://anaconda.org/conda-forge/smo/badges/version.svg)](https://anaconda.org/conda-forge/smo)
 [![Paper](https://img.shields.io/badge/DOI-10.1364/JOSAA.477468-blue)](https://doi.org/10.1364/JOSAA.477468)
 
 # SMO
