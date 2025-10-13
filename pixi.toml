@@ -1,0 +1,75 @@
+[workspace]
+channels = ["https://prefix.dev/conda-forge"]
+platforms = ["linux-64", "osx-arm64", "win-64"]
+
+[environments]
+default = ["test"]
+build = { features = ["build"], no-default-feature = true }
+lint = { features = ["lint"], no-default-feature = true }
+py39 = ["py39", "test", "nbtest"]
+py310 = ["py310", "test", "nbtest"]
+py311 = ["py311", "test", "nbtest"]
+py312 = ["py312", "test", "nbtest"]
+py313 = ["py313", "test", "nbtest"]
+py314 = ["py314", "test"]
+
+[tasks]
+release = """git tag $(pixi project version get)
+&& git push --tags
+|| echo 'Run `pixi project version <major|minor|patch>` to increase the current version.'
+"""
+
+[dependencies]
+numpy = "*"
+
+[pypi-dependencies]
+smo = { path = ".", editable = true }
+
+[feature.test.dependencies]
+pytest = "*"
+
+[feature.test.pypi-dependencies]
+pytest-readme = "*"
+
+[feature.test.tasks]
+test = "pytest --doctest-modules"
+
+[feature.nbtest.dependencies]
+nbmake = "*"
+ipykernel = "*"
+matplotlib = "*"
+scikit-image = "*"
+bottleneck = "*"
+
+[feature.nbtest.tasks]
+nbtest = "pytest --nbmake examples/usage.ipynb"
+
+[feature.py39.dependencies]
+python = "3.9.*"
+[feature.py310.dependencies]
+python = "3.10.*"
+[feature.py311.dependencies]
+python = "3.11.*"
+[feature.py312.dependencies]
+python = "3.12.*"
+[feature.py313.dependencies]
+python = "3.13.*"
+[feature.py314.dependencies]
+python = "3.14.*"
+
+[feature.lint.tasks]
+lint = "lefthook run pre-commit --all-files"
+
+[feature.lint.dependencies]
+lefthook = "*"
+dprint = "*"
+ruff = "*"
+typos = "*"
+actionlint = "*"
+
+[feature.build.dependencies]
+uv = "*"
+
+[feature.build.tasks]
+build = "uv build"
+publish = "uv publish"

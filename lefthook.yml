@@ -1,0 +1,25 @@
+templates:
+  run: "pixi run --quiet --no-progress --environment=lint"
+
+lefthook: "pixi run --quiet --no-progress --environment lint lefthook"
+
+pre-commit:
+  jobs:
+    - name: format
+      stage_fixed: true
+      run: "{run} dprint fmt"
+    
+    - name: lint
+      group:
+        parallel: true
+        jobs:
+          - name: ruff check
+            glob: "*.{py,pyi,pyw,ipynb}"
+            run: "{run} ruff check --fix {staged_files}"
+    
+          - name: typos
+            stage_fixed: true
+            run: "{run} typos"
+    
+          - name: actionlint
+            run: "{run} actionlint"

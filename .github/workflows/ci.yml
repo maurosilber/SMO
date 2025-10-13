@@ -1,0 +1,52 @@
+name: CI
+
+on: [push]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: prefix-dev/setup-pixi@v0.9.1
+        with:
+          environments: lint
+      - run: pixi run --environment lint lint
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment:
+          - py39
+          - py310
+          - py311
+          - py312
+          - py313
+    steps:
+      - uses: actions/checkout@v5
+      - uses: prefix-dev/setup-pixi@v0.9.1
+        with:
+          environments: ${{ matrix.environment }}
+      - run: pixi run --environment ${{ matrix.environment }} test
+      - run: pixi run --environment ${{ matrix.environment }} nbtest
+
+  build:
+    needs: [test, lint]
+
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/smo
+    permissions:
+      id-token: write  # for trusted publising to PyPI
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: prefix-dev/setup-pixi@v0.9.1
+        with:
+          environments: build
+      - name: Build the package
+        run: pixi run --environment build build
+      - name: Publish to PyPI
+        if: github.ref_type == 'tag'
+        run: pixi run --environment build publish

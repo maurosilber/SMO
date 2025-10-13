@@ -1,11 +1,43 @@
+[project]
+authors = [{ name = "Mauro Silberberg", email = "maurosilber@gmail.com" }]
+description = "Implementation of the Silver Mountain Operator (SMO) for the estimation of background distributions."
+dependencies = [
+  "numpy",
+  "scipy",
+  "typing_extensions",
+]
+keywords = ["background", "fluorescence", "microscopy", "imaging"]
+license = "MIT"
+name = "SMO"
+requires-python = ">= 3.9"
+version = "2.0.2"
+classifiers = [
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering",
+]
+
+[project.urls]
+homepage = "https://github.com/maurosilber/SMO"
+issues = "https://github.com/maurosilber/SMO/issues"
+changelog = "https://github.com/maurosilber/SMO/blob/main/CHANGELOG.md"
+documentation = "https://github.com/maurosilber/SMO"
+
 [build-system]
-requires = ["setuptools", "wheel", "setuptools_scm[toml]"]
-build-backend = "setuptools.build_meta"
+build-backend = "uv_build"
+requires = ["uv_build>=0.9,<0.10"]
 
-[tool.setuptools_scm]
+[tool.ruff.format]
+docstring-code-format = true
 
-[tool.isort]
-profile = "black"
+[tool.ruff.lint]
+extend-select = ["I"]
 
-[tool.check-manifest]
-ignore = [".pre-commit-config.yaml"]
+[tool.pyright]
+typeCheckingMode = "standard"
+venv = "default"
+venvPath = ".pixi/envs/"
+
+[tool.typos.default]
+extend-ignore-re = [
+  "np.arange",
+]
